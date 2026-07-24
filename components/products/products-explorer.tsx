@@ -122,7 +122,7 @@ export function ProductsExplorer() {
   const handleAction = (action: ProductAction, product: Product) => {
     switch (action) {
       case "view":
-        router.push(`/products/${product.id}`);
+        router.push(`/admin/products/${product.id}`);
         break;
       case "edit":
         setEditing(product);
@@ -135,7 +135,7 @@ export function ProductsExplorer() {
             title: "Product duplicated",
             description: `Created “${copy.name}”.`,
           });
-          router.push(`/products/${copy.id}`);
+          router.push(`/admin/products/${copy.id}`);
         }
         break;
       }

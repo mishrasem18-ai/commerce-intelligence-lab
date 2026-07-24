@@ -59,7 +59,7 @@ export function ProductsHeaderActions() {
       title: "Product created",
       description: `${created.name} was added to your catalog.`,
     });
-    router.push(`/products/${created.id}`);
+    router.push(`/admin/products/${created.id}`);
   };
 
   return (

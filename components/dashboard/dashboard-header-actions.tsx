@@ -43,7 +43,7 @@ export function DashboardHeaderActions() {
         <Download />
         Export
       </Button>
-      <Button onClick={() => router.push("/reports")}>
+      <Button onClick={() => router.push("/admin/reports")}>
         <Plus />
         New Report
       </Button>

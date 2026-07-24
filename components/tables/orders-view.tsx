@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 const filters: Array<{ label: string; value: OrderStatus | "All" }> = [
   { label: "All", value: "All" },
+  { label: "Processing", value: "Processing" },
   { label: "Paid", value: "Paid" },
   { label: "Pending", value: "Pending" },
   { label: "Shipped", value: "Shipped" },

@@ -35,7 +35,7 @@ export function ProductDetailActions({ product, onEdit }: ProductDetailActionsPr
         title: "Product duplicated",
         description: `Created “${copy.name}”.`,
       });
-      router.push(`/products/${copy.id}`);
+      router.push(`/admin/products/${copy.id}`);
     }
   };
 
@@ -52,7 +52,7 @@ export function ProductDetailActions({ product, onEdit }: ProductDetailActionsPr
     deleteProduct(product.id);
     setConfirming(false);
     toast({ title: "Product deleted", description: `${product.name} was removed.` });
-    router.push("/products");
+    router.push("/admin/products");
   };
 
   return (

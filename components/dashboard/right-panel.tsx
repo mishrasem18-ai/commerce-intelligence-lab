@@ -26,7 +26,7 @@ export function RightPanel() {
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle>Recent Activity</CardTitle>
           <Link
-            href="/activity"
+            href="/admin/activity"
             className={buttonVariants({ variant: "ghost", size: "sm" })}
           >
             View all

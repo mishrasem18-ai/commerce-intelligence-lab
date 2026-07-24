@@ -22,6 +22,7 @@ import {
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
 import { Avatar } from "@/components/ui/avatar";
+import { useAuth } from "@/lib/store/auth-store";
 
 const CURRENT_USER = {
   name: "Anurag Mishra",
@@ -32,6 +33,7 @@ const CURRENT_USER = {
 export function ProfileMenu() {
   const router = useRouter();
   const { toast } = useToast();
+  const { signOutAdmin } = useAuth();
   const [signingOut, setSigningOut] = React.useState(false);
 
   const go = (href: string) => router.push(href);
@@ -65,24 +67,24 @@ export function ProfileMenu() {
           </div>
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Account</DropdownMenuLabel>
-          <DropdownMenuItem onSelect={() => go("/settings?tab=profile")}>
+          <DropdownMenuItem onSelect={() => go("/admin/settings?tab=profile")}>
             <User />
             Profile
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => go("/settings?tab=account")}>
+          <DropdownMenuItem onSelect={() => go("/admin/settings?tab=account")}>
             <ShieldCheck />
             Account Settings
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => go("/settings?tab=workspace")}>
+          <DropdownMenuItem onSelect={() => go("/admin/settings?tab=workspace")}>
             <Building2 />
             Workspace Settings
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => go("/settings?tab=billing")}>
+          <DropdownMenuItem onSelect={() => go("/admin/settings?tab=billing")}>
             <CreditCard />
             Billing
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => go("/ai-assistant")}>
+          <DropdownMenuItem onSelect={() => go("/admin/ai-assistant")}>
             <LifeBuoy />
             Support
           </DropdownMenuItem>
@@ -100,12 +102,13 @@ export function ProfileMenu() {
         open={signingOut}
         icon={<LogOut />}
         title="Sign out"
-        description="This is a demo workspace — you'll be returned to the dashboard."
+        description="You'll be returned to the admin sign-in screen."
         confirmLabel="Sign out"
         onConfirm={() => {
           setSigningOut(false);
-          toast({ title: "Signed out", description: "Demo session ended." });
-          router.push("/");
+          signOutAdmin();
+          toast({ title: "Signed out", description: "Admin session ended." });
+          router.replace("/admin/login");
         }}
         onCancel={() => setSigningOut(false)}
       />

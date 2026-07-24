@@ -154,7 +154,37 @@ export const products: Product[] = [
   { id: "P-1049", name: "Drift Ergonomic Mouse", sku: "DRF-EM-08", category: "Accessories", unitsSold: 542, revenue: 27100, stock: 96, price: 50.0, trend: 0.03 },
 ];
 
-export type OrderStatus = "Paid" | "Pending" | "Shipped" | "Refunded" | "Cancelled";
+export type OrderStatus =
+  | "Processing"
+  | "Paid"
+  | "Pending"
+  | "Shipped"
+  | "Refunded"
+  | "Cancelled";
+
+export type PaymentMethod = "Card" | "COD";
+export type PaymentStatus = "Paid" | "Pending" | "Refunded";
+
+export interface Address {
+  id: string;
+  fullName: string;
+  mobile: string;
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isDefault?: boolean;
+}
+
+export interface OrderLineItem {
+  productId: string;
+  name: string;
+  sku: string;
+  price: number;
+  quantity: number;
+}
 
 export interface Order {
   id: string;
@@ -166,6 +196,18 @@ export interface Order {
   status: OrderStatus;
   date: string;
   items: number;
+  // Buyer-created order extensions (seed orders leave these undefined).
+  orderNumber?: string;
+  customerId?: string;
+  lineItems?: OrderLineItem[];
+  subtotal?: number;
+  tax?: number;
+  shipping?: number;
+  total?: number;
+  shippingAddress?: Address;
+  paymentMethod?: PaymentMethod;
+  paymentStatus?: PaymentStatus;
+  createdAt?: string;
 }
 
 export const orders: Order[] = [
@@ -193,6 +235,13 @@ export interface Customer {
   spent: number;
   status: "Active" | "New" | "At Risk" | "VIP";
   lastSeen: string;
+  // Buyer-account extensions (seed customers leave these undefined).
+  firstName?: string;
+  lastName?: string;
+  mobile?: string;
+  addresses?: Address[];
+  lastOrderDate?: string;
+  joinedAt?: string;
 }
 
 export const customers: Customer[] = [

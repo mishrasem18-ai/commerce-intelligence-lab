@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { OrderDetailView } from "@/components/orders/order-detail-view";
 import { orders } from "@/lib/data";
 
-export const dynamicParams = false;
+// Seed orders are prerendered; buyer-created orders (client store) render on demand.
+export const dynamicParams = true;
 
-function findOrder(slug: string) {
-  return orders.find((order) => order.id.replace(/^#/, "") === slug);
+function findSeedOrder(slug: string) {
+  return orders.find((order) => order.id.replace(/^#/, "") === slug) ?? null;
 }
 
 export function generateStaticParams() {
@@ -19,8 +19,8 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const order = findOrder(id);
-  return { title: order ? `Order ${order.id}` : "Order not found" };
+  const order = findSeedOrder(id);
+  return { title: order ? `Order ${order.id}` : "Order" };
 }
 
 export default async function OrderDetailPage({
@@ -29,9 +29,5 @@ export default async function OrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const order = findOrder(id);
-
-  if (!order) notFound();
-
-  return <OrderDetailView initialOrder={order} />;
+  return <OrderDetailView slug={id} initialOrder={findSeedOrder(id)} />;
 }

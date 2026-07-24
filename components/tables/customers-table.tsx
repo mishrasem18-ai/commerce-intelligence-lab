@@ -23,7 +23,7 @@ const statusVariant: Record<Customer["status"], BadgeProps["variant"]> = {
 
 export function CustomersTable({ customers }: { customers: Customer[] }) {
   const router = useRouter();
-  const open = (id: string) => router.push(`/customers/${id}`);
+  const open = (id: string) => router.push(`/admin/customers/${id}`);
 
   return (
     <Table>

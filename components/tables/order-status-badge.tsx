@@ -6,6 +6,7 @@ const statusConfig: Record<
   OrderStatus,
   { variant: BadgeProps["variant"]; dot: string }
 > = {
+  Processing: { variant: "default", dot: "bg-primary" },
   Paid: { variant: "success", dot: "bg-success" },
   Shipped: { variant: "default", dot: "bg-primary" },
   Pending: { variant: "warning", dot: "bg-warning" },

@@ -26,7 +26,7 @@ export function ProductCard({ product, onAction }: ProductCardProps) {
     <Card className="group flex flex-col overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:shadow-lg hover:shadow-black/5">
       <div className="relative">
         <Link
-          href={`/products/${product.id}`}
+          href={`/admin/products/${product.id}`}
           aria-label={`View ${product.name}`}
           className="block focus-visible:outline-none"
         >
@@ -64,7 +64,7 @@ export function ProductCard({ product, onAction }: ProductCardProps) {
 
         <div className="min-w-0">
           <Link
-            href={`/products/${product.id}`}
+            href={`/admin/products/${product.id}`}
             className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors hover:text-primary"
           >
             {product.name}

@@ -36,7 +36,7 @@ interface RecentOrdersTableProps {
 export function RecentOrdersTable({ orders, compact }: RecentOrdersTableProps) {
   const router = useRouter();
 
-  const open = (id: string) => router.push(`/orders/${orderSlug(id)}`);
+  const open = (id: string) => router.push(`/admin/orders/${orderSlug(id)}`);
 
   return (
     <Table>

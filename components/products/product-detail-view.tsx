@@ -74,7 +74,7 @@ export function ProductDetailView({ id, initialProduct }: ProductDetailViewProps
             removed from the catalog.
           </p>
         </div>
-        <Link href="/products" className={buttonVariants({ variant: "outline" })}>
+        <Link href="/admin/products" className={buttonVariants({ variant: "outline" })}>
           <ArrowLeft />
           Back to Products
         </Link>

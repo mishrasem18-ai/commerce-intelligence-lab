@@ -85,7 +85,7 @@ export function GlobalSearch({
         type: "product",
         title: p.name,
         subtitle: `${p.sku} · ${p.category}`,
-        href: `/products/${p.id}`,
+        href: `/admin/products/${p.id}`,
         icon: Package,
       }));
 
@@ -102,7 +102,7 @@ export function GlobalSearch({
         type: "order",
         title: o.id,
         subtitle: `${o.customer} · ${formatCurrency(o.amount, { maximumFractionDigits: 2 })}`,
-        href: `/orders/${encodeURIComponent(o.id.replace(/^#/, ""))}`,
+        href: `/admin/orders/${encodeURIComponent(o.id.replace(/^#/, ""))}`,
         icon: ShoppingCart,
       }));
 
@@ -117,7 +117,7 @@ export function GlobalSearch({
         type: "customer",
         title: c.name,
         subtitle: c.email,
-        href: `/customers/${c.id}`,
+        href: `/admin/customers/${c.id}`,
         icon: Users,
       }));
 

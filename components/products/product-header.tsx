@@ -20,7 +20,7 @@ export function ProductHeader({
         aria-label="Breadcrumb"
         className="flex items-center gap-1.5 text-sm text-muted-foreground"
       >
-        <Link href="/products" className="transition-colors hover:text-foreground">
+        <Link href="/admin/products" className="transition-colors hover:text-foreground">
           Products
         </Link>
         <ChevronRight className="size-4" />

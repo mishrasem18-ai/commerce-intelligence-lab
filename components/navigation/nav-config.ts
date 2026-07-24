@@ -26,24 +26,24 @@ export const navSections: NavSection[] = [
   {
     label: "Overview",
     items: [
-      { title: "Dashboard", href: "/", icon: LayoutDashboard },
-      { title: "Analytics", href: "/analytics", icon: BarChart3 },
-      { title: "Reports", href: "/reports", icon: FileText },
+      { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+      { title: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+      { title: "Reports", href: "/admin/reports", icon: FileText },
     ],
   },
   {
     label: "Commerce",
     items: [
-      { title: "Products", href: "/products", icon: Package },
-      { title: "Orders", href: "/orders", icon: ShoppingCart, badge: "12" },
-      { title: "Customers", href: "/customers", icon: Users },
+      { title: "Products", href: "/admin/products", icon: Package },
+      { title: "Orders", href: "/admin/orders", icon: ShoppingCart, badge: "12" },
+      { title: "Customers", href: "/admin/customers", icon: Users },
     ],
   },
   {
     label: "Workspace",
     items: [
-      { title: "AI Assistant", href: "/ai-assistant", icon: Sparkles, badge: "New" },
-      { title: "Settings", href: "/settings", icon: Settings },
+      { title: "AI Assistant", href: "/admin/ai-assistant", icon: Sparkles, badge: "New" },
+      { title: "Settings", href: "/admin/settings", icon: Settings },
     ],
   },
 ];

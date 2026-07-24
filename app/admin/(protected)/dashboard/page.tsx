@@ -10,15 +10,16 @@ import {
 } from "@/components/ui/card";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-header-actions";
 import { KpiGrid } from "@/components/dashboard/kpi-grid";
+import { LiveMetrics } from "@/components/dashboard/live-metrics";
 import { ChartCard } from "@/components/charts/chart-card";
 import { RevenueTrendChart } from "@/components/charts/revenue-trend-chart";
 import { OrdersByMonthChart } from "@/components/charts/orders-by-month-chart";
 import { TrafficSourcesChart } from "@/components/charts/traffic-sources-chart";
 import { CountryRevenueChart } from "@/components/charts/country-revenue-chart";
 import { RightPanel } from "@/components/dashboard/right-panel";
-import { RecentOrdersTable } from "@/components/tables/recent-orders-table";
+import { DashboardRecentOrders } from "@/components/dashboard/dashboard-recent-orders";
 import { TopProductsList } from "@/components/dashboard/top-products-list";
-import { orders, products } from "@/lib/data";
+import { products } from "@/lib/data";
 
 export default function DashboardPage() {
   return (
@@ -28,6 +29,8 @@ export default function DashboardPage() {
         description="Welcome back — here's how your store is performing this month."
         actions={<DashboardHeaderActions />}
       />
+
+      <LiveMetrics />
 
       <KpiGrid />
 
@@ -70,14 +73,14 @@ export default function DashboardPage() {
           <CardHeader className="flex-row items-center justify-between space-y-0">
             <CardTitle>Recent Orders</CardTitle>
             <Link
-              href="/orders"
+              href="/admin/orders"
               className={buttonVariants({ variant: "ghost", size: "sm" })}
             >
               View all orders
             </Link>
           </CardHeader>
           <CardContent>
-            <RecentOrdersTable orders={orders.slice(0, 6)} />
+            <DashboardRecentOrders />
           </CardContent>
         </Card>
 
@@ -94,7 +97,7 @@ export default function DashboardPage() {
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle>Top Products</CardTitle>
           <Link
-            href="/products"
+            href="/admin/products"
             className={buttonVariants({ variant: "ghost", size: "sm" })}
           >
             View catalog

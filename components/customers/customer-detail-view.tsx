@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { ChevronRight, Mail, MapPin } from "lucide-react";
 import {
   Card,
@@ -12,10 +12,10 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { RecentOrdersTable } from "@/components/tables/recent-orders-table";
-import { customers, orders, type Customer } from "@/lib/data";
+import { useCustomers } from "@/lib/store/customers-store";
+import { useOrders } from "@/lib/store/orders-store";
+import { type Customer } from "@/lib/data";
 import { formatCurrency, formatNumber } from "@/lib/utils";
-
-export const dynamicParams = false;
 
 const statusVariant: Record<Customer["status"], BadgeProps["variant"]> = {
   VIP: "default",
@@ -24,31 +24,39 @@ const statusVariant: Record<Customer["status"], BadgeProps["variant"]> = {
   "At Risk": "warning",
 };
 
-export function generateStaticParams() {
-  return customers.map((customer) => ({ id: customer.id }));
-}
-
-export async function generateMetadata({
-  params,
+export function CustomerDetailView({
+  id,
+  initialCustomer,
 }: {
-  params: Promise<{ id: string }>;
-}): Promise<Metadata> {
-  const { id } = await params;
-  const customer = customers.find((c) => c.id === id);
-  return { title: customer ? customer.name : "Customer not found" };
-}
-
-export default async function CustomerDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
+  id: string;
+  initialCustomer: Customer | null;
 }) {
-  const { id } = await params;
-  const customer = customers.find((c) => c.id === id);
+  const { getCustomer, hydrated } = useCustomers();
+  const { orders } = useOrders();
 
-  if (!customer) notFound();
+  const customer = getCustomer(id) ?? initialCustomer ?? null;
 
-  const customerOrders = orders.filter((order) => order.customer === customer.name);
+  if (!customer) {
+    if (!hydrated) {
+      return (
+        <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">
+          Loading customer…
+        </div>
+      );
+    }
+    return (
+      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-center">
+        <h1 className="text-xl font-semibold text-foreground">Customer not found</h1>
+        <Link href="/admin/customers" className="text-sm text-primary hover:underline">
+          Back to customers
+        </Link>
+      </div>
+    );
+  }
+
+  const customerOrders = orders.filter((order) =>
+    order.customerId ? order.customerId === customer.id : order.customer === customer.name,
+  );
   const aov = customer.orders > 0 ? customer.spent / customer.orders : 0;
 
   return (
@@ -57,7 +65,7 @@ export default async function CustomerDetailPage({
         aria-label="Breadcrumb"
         className="flex items-center gap-1.5 text-sm text-muted-foreground"
       >
-        <Link href="/customers" className="transition-colors hover:text-foreground">
+        <Link href="/admin/customers" className="transition-colors hover:text-foreground">
           Customers
         </Link>
         <ChevronRight className="size-4" />
@@ -76,6 +84,12 @@ export default async function CustomerDetailPage({
             </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
               <span>{customer.email}</span>
+              {customer.mobile && (
+                <>
+                  <span className="text-border">•</span>
+                  <span>{customer.mobile}</span>
+                </>
+              )}
               <span className="text-border">•</span>
               <span className="inline-flex items-center gap-1.5">
                 <MapPin className="size-4" />

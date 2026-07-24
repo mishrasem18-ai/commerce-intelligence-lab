@@ -16,7 +16,42 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Two-sided demo platform
+
+This project runs as a two-sided commerce demo backed by one shared, browser-local
+data layer (products, orders, customers). No database or paid services are used.
+
+### Public buyer storefront (Aurora Market)
+
+- `/` home, `/shop`, `/product/[id]`, `/cart`, `/checkout`
+- `/login`, `/signup` — buyers self-register; new accounts appear in the admin
+  Customers list automatically.
+- `/account`, `/account/orders`, `/account/orders/[id]`, `/account/profile`,
+  `/account/addresses`
+
+Browsing and adding to cart are open. **Checkout requires a buyer login.** Placing an
+order creates a real order (visible in the admin), decrements inventory, and updates
+the customer's totals.
+
+### Private admin (Commerce Intelligence)
+
+All admin routes live under `/admin/*` and are protected by middleware. Without an
+admin session you are redirected to `/admin/login`.
+
+**Demo admin credentials** (developer-facing only — never shown in the storefront):
+
+```
+Email:    admin@commercelab.io
+Password: admin123
+```
+
+Buyer sessions and admin sessions are independent: a signed-in buyer cannot reach
+`/admin`, and an admin session does not create a buyer account.
+
+> Demo persistence uses `localStorage`. Data-access lives in `lib/store/*` so it can be
+> swapped for a real backend later. Card details are never stored — payment is simulated.
+
+You can start editing the storefront home by modifying `app/(store)/page.tsx`.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

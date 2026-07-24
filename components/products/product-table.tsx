@@ -122,7 +122,7 @@ export function ProductTable({
           return (
             <TableRow key={product.id}>
               <TableCell>
-                <Link href={`/products/${product.id}`} aria-label={`View ${product.name}`}>
+                <Link href={`/admin/products/${product.id}`} aria-label={`View ${product.name}`}>
                   <ProductImage
                     src={product.image}
                     alt={product.name}
@@ -135,7 +135,7 @@ export function ProductTable({
               <TableCell>
                 <div className="min-w-0 max-w-[15rem]">
                   <Link
-                    href={`/products/${product.id}`}
+                    href={`/admin/products/${product.id}`}
                     className="block truncate text-sm font-medium text-foreground transition-colors hover:text-primary"
                   >
                     {product.name}

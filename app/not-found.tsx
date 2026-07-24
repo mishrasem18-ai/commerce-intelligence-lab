@@ -16,19 +16,19 @@ export default function NotFound() {
         </h1>
         <p className="max-w-sm text-sm text-muted-foreground">
           The page you&apos;re looking for doesn&apos;t exist or may have been
-          moved. Check the URL or head back to your workspace.
+          moved. Check the URL or head back home.
         </p>
       </div>
       <div className="flex flex-wrap items-center justify-center gap-2">
         <Link href="/" className={buttonVariants({ variant: "primary" })}>
           <Home />
-          Back to Dashboard
+          Back to Home
         </Link>
         <Link
-          href="/products"
+          href="/shop"
           className={cn(buttonVariants({ variant: "outline" }))}
         >
-          Browse Products
+          Browse Shop
         </Link>
       </div>
     </div>

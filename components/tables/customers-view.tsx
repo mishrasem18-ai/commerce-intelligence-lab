@@ -3,7 +3,8 @@
 import * as React from "react";
 import { Search } from "lucide-react";
 import { CustomersTable } from "@/components/tables/customers-table";
-import { customers, type Customer } from "@/lib/data";
+import { useCustomers } from "@/lib/store/customers-store";
+import { type Customer } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 const filters: Array<{ label: string; value: Customer["status"] | "All" }> = [
@@ -15,6 +16,7 @@ const filters: Array<{ label: string; value: Customer["status"] | "All" }> = [
 ];
 
 export function CustomersView() {
+  const { customers } = useCustomers();
   const [active, setActive] = React.useState<Customer["status"] | "All">("All");
   const [query, setQuery] = React.useState("");
 
@@ -29,7 +31,7 @@ export function CustomersView() {
         customer.country.toLowerCase().includes(q);
       return matchesStatus && matchesQuery;
     });
-  }, [active, query]);
+  }, [customers, active, query]);
 
   return (
     <div className="flex flex-col gap-4">

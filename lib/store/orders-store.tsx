@@ -10,6 +10,7 @@ interface OrdersContextValue {
   hydrated: boolean;
   getOrder: (id: string) => Order | undefined;
   updateStatus: (id: string, status: OrderStatus) => void;
+  addOrder: (order: Order) => void;
 }
 
 const OrdersContext = React.createContext<OrdersContextValue | null>(null);
@@ -61,9 +62,13 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
+  const addOrder = React.useCallback((order: Order) => {
+    setOrders((prev) => [order, ...prev]);
+  }, []);
+
   const value = React.useMemo<OrdersContextValue>(
-    () => ({ orders, hydrated, getOrder, updateStatus }),
-    [orders, hydrated, getOrder, updateStatus],
+    () => ({ orders, hydrated, getOrder, updateStatus, addOrder }),
+    [orders, hydrated, getOrder, updateStatus, addOrder],
   );
 
   return <OrdersContext.Provider value={value}>{children}</OrdersContext.Provider>;

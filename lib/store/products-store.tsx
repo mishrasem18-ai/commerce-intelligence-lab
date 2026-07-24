@@ -18,6 +18,7 @@ interface ProductsContextValue {
   duplicateProduct: (id: string) => Product | undefined;
   deleteProduct: (id: string) => void;
   toggleStatus: (id: string) => void;
+  decrementInventory: (items: { productId: string; quantity: number }[]) => void;
 }
 
 const ProductsContext = React.createContext<ProductsContextValue | null>(null);
@@ -152,6 +153,23 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
+  const decrementInventory = React.useCallback(
+    (items: { productId: string; quantity: number }[]) => {
+      setProducts((prev) =>
+        prev.map((product) => {
+          const line = items.find((item) => item.productId === product.id);
+          if (!line) return product;
+          return {
+            ...product,
+            inventory: Math.max(0, product.inventory - line.quantity),
+            updatedAt: new Date().toISOString(),
+          };
+        }),
+      );
+    },
+    [],
+  );
+
   const value = React.useMemo<ProductsContextValue>(
     () => ({
       products,
@@ -162,6 +180,7 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
       duplicateProduct,
       deleteProduct,
       toggleStatus,
+      decrementInventory,
     }),
     [
       products,
@@ -172,6 +191,7 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
       duplicateProduct,
       deleteProduct,
       toggleStatus,
+      decrementInventory,
     ],
   );
 
