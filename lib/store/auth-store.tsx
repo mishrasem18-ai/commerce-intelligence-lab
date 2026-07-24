@@ -11,11 +11,14 @@ import { useCustomers } from "@/lib/store/customers-store";
  * the surface (signIn/signOut/signup/login) is what components depend on.
  */
 
-const ADMIN_EMAIL = "admin@commercelab.io";
-const ADMIN_PASSWORD = "admin123";
+/*
+ * Admin authentication is verified SERVER-SIDE against D1 (admin_users) via the
+ * /api/admin/{login,logout,session} endpoints. No password or password hash is
+ * shipped to the browser; the admin session is an HttpOnly cookie the server
+ * manages (cil_admin). Buyer auth remains client/localStorage for now (Phase D).
+ */
 
 const ACCOUNTS_KEY = "cil.buyerAccounts.v1";
-const ADMIN_SESSION_KEY = "cil.adminSession.v1";
 const BUYER_SESSION_KEY = "cil.buyerSession.v1";
 
 export const ADMIN_COOKIE = "cil_admin";
@@ -55,8 +58,8 @@ interface AuthContextValue {
   admin: AdminSession | null;
   buyer: BuyerSession | null;
   hydrated: boolean;
-  signInAdmin: (email: string, password: string) => AuthResult;
-  signOutAdmin: () => void;
+  signInAdmin: (email: string, password: string) => Promise<AuthResult>;
+  signOutAdmin: () => Promise<void>;
   signupBuyer: (input: SignupInput) => AuthResult;
   loginBuyer: (email: string, password: string) => AuthResult;
   logoutBuyer: () => void;
@@ -94,14 +97,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /* eslint-disable react-hooks/set-state-in-effect */
   React.useEffect(() => {
+    // Buyer session/accounts hydrate from localStorage (unchanged in this phase).
     try {
       const rawAccounts = window.localStorage.getItem(ACCOUNTS_KEY);
       if (rawAccounts) setAccounts(JSON.parse(rawAccounts) as BuyerAccount[]);
-      const rawAdmin = window.localStorage.getItem(ADMIN_SESSION_KEY);
-      if (rawAdmin) {
-        setAdmin(JSON.parse(rawAdmin) as AdminSession);
-        setCookie(ADMIN_COOKIE, "1");
-      }
       const rawBuyer = window.localStorage.getItem(BUYER_SESSION_KEY);
       if (rawBuyer) {
         setBuyer(JSON.parse(rawBuyer) as BuyerSession);
@@ -110,7 +109,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       /* ignore malformed storage */
     }
-    setHydrated(true);
+    // Admin session is validated server-side (HttpOnly cookie → D1 sessions).
+    let cancelled = false;
+    fetch("/api/admin/session", { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { admin?: { email: string } | null } | null) => {
+        if (!cancelled && data?.admin) setAdmin({ email: data.admin.email });
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setHydrated(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -123,17 +135,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [accounts, hydrated]);
 
-  const persistAdmin = (session: AdminSession | null) => {
-    setAdmin(session);
-    if (session) {
-      window.localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
-      setCookie(ADMIN_COOKIE, "1");
-    } else {
-      window.localStorage.removeItem(ADMIN_SESSION_KEY);
-      deleteCookie(ADMIN_COOKIE);
-    }
-  };
-
   const persistBuyer = (session: BuyerSession | null) => {
     setBuyer(session);
     if (session) {
@@ -145,18 +146,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signInAdmin = React.useCallback((email: string, password: string): AuthResult => {
-    if (
-      email.trim().toLowerCase() === ADMIN_EMAIL &&
-      password === ADMIN_PASSWORD
-    ) {
-      persistAdmin({ email: ADMIN_EMAIL });
-      return { ok: true };
-    }
-    return { ok: false, error: "Invalid admin credentials." };
-  }, []);
+  const signInAdmin = React.useCallback(
+    async (email: string, password: string): Promise<AuthResult> => {
+      try {
+        const res = await fetch("/api/admin/login", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ email, password }),
+        });
+        const data = (await res.json().catch(() => null)) as {
+          ok?: boolean;
+          error?: string;
+          admin?: { email: string };
+        } | null;
+        if (res.ok && data?.ok && data.admin) {
+          setAdmin({ email: data.admin.email });
+          return { ok: true };
+        }
+        return { ok: false, error: data?.error ?? "Invalid admin credentials." };
+      } catch {
+        return { ok: false, error: "Sign in failed." };
+      }
+    },
+    [],
+  );
 
-  const signOutAdmin = React.useCallback(() => persistAdmin(null), []);
+  const signOutAdmin = React.useCallback(async () => {
+    try {
+      await fetch("/api/admin/logout", { method: "POST", credentials: "same-origin" });
+    } catch {
+      /* ignore */
+    }
+    setAdmin(null);
+  }, []);
 
   const signupBuyer = React.useCallback(
     (input: SignupInput): AuthResult => {

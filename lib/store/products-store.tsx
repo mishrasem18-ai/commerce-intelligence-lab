@@ -1,11 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  products as seedProducts,
-  type Product,
-  type ProductStatus,
-} from "@/lib/data/products";
+import { type Product, type ProductStatus } from "@/lib/data/products";
 
 const STORAGE_KEY = "cil.products.v1";
 
@@ -54,36 +50,47 @@ function generateSku(name: string, existing: Set<string>): string {
   return candidate;
 }
 
-export function ProductsProvider({ children }: { children: React.ReactNode }) {
-  const [products, setProducts] = React.useState<Product[]>(seedProducts);
+export function ProductsProvider({
+  children,
+  initial,
+}: {
+  children: React.ReactNode;
+  initial: Product[];
+}) {
+  // Authoritative catalog comes from D1 (server-provided `initial`). The static
+  // array is no longer a runtime source.
+  const [products, setProducts] = React.useState<Product[]>(initial);
   const [hydrated, setHydrated] = React.useState(false);
+  // Ids present in D1. Anything else is a locally-created record (admin "add
+  // product") kept in a localStorage overlay until write-through (Phase D).
+  const d1Ids = React.useMemo(() => new Set(initial.map((p) => p.id)), [initial]);
 
-  // Load any persisted state after mount. Reading localStorage during render
-  // would diverge from the server-rendered seed, so hydration must happen in
-  // an effect — the one legitimate case for setState-in-effect here.
   /* eslint-disable react-hooks/set-state-in-effect */
   React.useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as Product[];
-        if (Array.isArray(parsed) && parsed.length > 0) setProducts(parsed);
+        const overlay = (JSON.parse(raw) as Product[]).filter((p) => !d1Ids.has(p.id));
+        if (overlay.length > 0) setProducts([...overlay, ...initial]);
       }
     } catch {
       /* ignore malformed storage */
     }
     setHydrated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  // Persist ONLY locally-created records (ids not in D1) — D1 stays authoritative.
   React.useEffect(() => {
     if (!hydrated) return;
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+      const overlay = products.filter((p) => !d1Ids.has(p.id));
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(overlay));
     } catch {
       /* ignore quota / unavailable storage */
     }
-  }, [products, hydrated]);
+  }, [products, hydrated, d1Ids]);
 
   const getProduct = React.useCallback(
     (id: string) => products.find((product) => product.id === id),

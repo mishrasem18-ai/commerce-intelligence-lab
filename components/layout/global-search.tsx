@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Package, Search, ShoppingCart, Users, type LucideIcon } from "lucide-react";
 import { useProducts } from "@/lib/store/products-store";
 import { useOrders } from "@/lib/store/orders-store";
-import { customers } from "@/lib/data";
+import { useCustomers } from "@/lib/store/customers-store";
 import { cn, formatCurrency } from "@/lib/utils";
 
 type EntityType = "product" | "order" | "customer";
@@ -39,6 +39,7 @@ export function GlobalSearch({
   const router = useRouter();
   const { products } = useProducts();
   const { orders } = useOrders();
+  const { customers } = useCustomers();
   const [query, setQuery] = React.useState("");
   const [open, setOpen] = React.useState(false);
   const [activeIndex, setActiveIndex] = React.useState(0);
@@ -122,7 +123,7 @@ export function GlobalSearch({
       }));
 
     return [...productItems, ...orderItems, ...customerItems];
-  }, [query, products, orders]);
+  }, [query, products, orders, customers]);
 
   const select = (item: SearchItem) => {
     router.push(item.href);

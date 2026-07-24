@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { orders as seedOrders, type Order, type OrderStatus } from "@/lib/data";
+import { type Order, type OrderStatus } from "@/lib/data";
 
 const STORAGE_KEY = "cil.orders.v1";
 
@@ -21,35 +21,45 @@ export function useOrders(): OrdersContextValue {
   return ctx;
 }
 
-export function OrdersProvider({ children }: { children: React.ReactNode }) {
-  const [orders, setOrders] = React.useState<Order[]>(seedOrders);
+export function OrdersProvider({
+  children,
+  initial,
+}: {
+  children: React.ReactNode;
+  initial: Order[];
+}) {
+  // Seed orders come from D1 (server-provided `initial`). Buyer-placed orders
+  // are kept in a localStorage overlay until write-through (Phase D/E).
+  const [orders, setOrders] = React.useState<Order[]>(initial);
   const [hydrated, setHydrated] = React.useState(false);
+  const d1Ids = React.useMemo(() => new Set(initial.map((o) => o.id)), [initial]);
 
-  // Hydration must happen post-mount so the server-rendered seed matches the
-  // client's first render; reading storage during render would diverge.
   /* eslint-disable react-hooks/set-state-in-effect */
   React.useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as Order[];
-        if (Array.isArray(parsed) && parsed.length > 0) setOrders(parsed);
+        const overlay = (JSON.parse(raw) as Order[]).filter((o) => !d1Ids.has(o.id));
+        if (overlay.length > 0) setOrders([...overlay, ...initial]);
       }
     } catch {
       /* ignore malformed storage */
     }
     setHydrated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  // Persist ONLY buyer-created orders (ids not in D1).
   React.useEffect(() => {
     if (!hydrated) return;
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+      const overlay = orders.filter((o) => !d1Ids.has(o.id));
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(overlay));
     } catch {
       /* ignore quota / unavailable storage */
     }
-  }, [orders, hydrated]);
+  }, [orders, hydrated, d1Ids]);
 
   const getOrder = React.useCallback(
     (id: string) => orders.find((order) => order.id === id),

@@ -9,7 +9,10 @@
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && wrangler deploy",
     "lint": "eslint",
-    "test:ai": "node --experimental-strip-types --test lib/ai/*.test.ts"
+    "test:ai": "node --experimental-strip-types --test lib/ai/*.test.ts",
+    "test:catalog": "node --experimental-strip-types --test lib/data/*.test.ts",
+    "test:auth": "node --experimental-strip-types --test lib/auth/*.test.ts",
+    "test": "node --experimental-strip-types --test lib/ai/*.test.ts lib/data/*.test.ts lib/auth/*.test.ts"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.2",

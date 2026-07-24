@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
 import { CustomerDetailView } from "@/components/customers/customer-detail-view";
-import { customers } from "@/lib/data";
+import { getCustomerById } from "@/lib/db/customers";
 
-// Seed customers are prerendered; buyer signups (client store) render on demand.
-export const dynamicParams = true;
-
-export function generateStaticParams() {
-  return customers.map((customer) => ({ id: customer.id }));
-}
+// Customers are served on demand from D1; buyer signups (client overlay)
+// resolve via the store when not present in D1.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -15,7 +12,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const customer = customers.find((c) => c.id === id);
+  const customer = await getCustomerById(id);
   return { title: customer ? customer.name : "Customer" };
 }
 
@@ -25,6 +22,5 @@ export default async function CustomerDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const customer = customers.find((c) => c.id === id) ?? null;
-  return <CustomerDetailView id={id} initialCustomer={customer} />;
+  return <CustomerDetailView id={id} initialCustomer={await getCustomerById(id)} />;
 }

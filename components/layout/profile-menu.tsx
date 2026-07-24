@@ -104,9 +104,9 @@ export function ProfileMenu() {
         title="Sign out"
         description="You'll be returned to the admin sign-in screen."
         confirmLabel="Sign out"
-        onConfirm={() => {
+        onConfirm={async () => {
           setSigningOut(false);
-          signOutAdmin();
+          await signOutAdmin();
           toast({ title: "Signed out", description: "Admin session ended." });
           router.replace("/admin/login");
         }}

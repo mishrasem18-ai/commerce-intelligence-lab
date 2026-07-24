@@ -23,5 +23,15 @@
 		// Enable image optimization
 		// see https://opennext.js.org/cloudflare/howtos/image
 		"binding": "IMAGES"
-	}
+	},
+	"d1_databases": [
+		{
+			// Persistent commerce database (Phase A: created + schema only; the app
+			// still reads/writes localStorage until later phases flip the data layer).
+			"binding": "DB",
+			"database_name": "commerce-intelligence-lab-db",
+			"database_id": "b4bbd4ff-55d2-4d4a-8dc4-61c29e2d7730",
+			"migrations_dir": "migrations"
+		}
+	]
 }

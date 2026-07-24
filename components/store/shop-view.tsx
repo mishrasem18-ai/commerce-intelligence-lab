@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, type SelectOption } from "@/components/ui/select";
@@ -25,6 +26,9 @@ const SORT_OPTIONS: SelectOption[] = [
   { value: "rating", label: "Rating" },
   { value: "popularity", label: "Popularity" },
 ];
+
+const SORT_KEYS = SORT_OPTIONS.map((o) => o.value);
+const DEFAULT_SORT: SortKey = "featured";
 
 const categoryOptions: SelectOption[] = [
   { value: "all", label: "All categories" },
@@ -52,11 +56,47 @@ export function ShopView({
   initialQuery?: string;
 }) {
   const { products } = useProducts();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Initial price/sort come from the URL too (category/query arrive as props from
+  // the server page). Read once on mount; local state drives the UI thereafter.
   const [query, setQuery] = React.useState(initialQuery);
   const [category, setCategory] = React.useState(initialCategory);
-  const [price, setPrice] = React.useState("all");
-  const [sort, setSort] = React.useState<SortKey>("featured");
+  const [price, setPrice] = React.useState(() => {
+    const p = searchParams.get("price");
+    return p && PRICE_BUCKETS.some((b) => b.id === p) ? p : "all";
+  });
+  const [sort, setSort] = React.useState<SortKey>(() => {
+    const s = searchParams.get("sort");
+    return s && SORT_KEYS.includes(s) ? (s as SortKey) : DEFAULT_SORT;
+  });
   const [page, setPage] = React.useState(1);
+
+  // Reflect active filters into the URL so refresh / share / back-forward
+  // reproduce the same view. Uses replace to avoid a history entry per change.
+  const syncUrl = React.useCallback(
+    (next: {
+      category?: string;
+      price?: string;
+      sort?: SortKey;
+      query?: string;
+    }) => {
+      const c = next.category ?? category;
+      const pr = next.price ?? price;
+      const s = next.sort ?? sort;
+      const q = (next.query ?? query).trim();
+      const params = new URLSearchParams();
+      if (c && c !== "all") params.set("category", c);
+      if (pr && pr !== "all") params.set("price", pr);
+      if (s && s !== DEFAULT_SORT) params.set("sort", s);
+      if (q) params.set("q", q);
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [category, price, sort, query, pathname, router],
+  );
 
   const resetPage = () => setPage(1);
 
@@ -90,6 +130,7 @@ export function ShopView({
             onChange={(e) => {
               setQuery(e.target.value);
               resetPage();
+              syncUrl({ query: e.target.value });
             }}
             placeholder="Search products…"
             aria-label="Search products"
@@ -103,6 +144,7 @@ export function ShopView({
             onValueChange={(v) => {
               setCategory(v);
               resetPage();
+              syncUrl({ category: v });
             }}
             options={categoryOptions}
             className="w-40"
@@ -113,6 +155,7 @@ export function ShopView({
             onValueChange={(v) => {
               setPrice(v);
               resetPage();
+              syncUrl({ price: v });
             }}
             options={priceOptions}
             className="w-36"
@@ -123,6 +166,7 @@ export function ShopView({
             onValueChange={(v) => {
               setSort(v as SortKey);
               resetPage();
+              syncUrl({ sort: v as SortKey });
             }}
             options={SORT_OPTIONS}
             align="end"

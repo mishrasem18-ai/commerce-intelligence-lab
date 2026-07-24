@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { customers as seedCustomers, type Customer } from "@/lib/data";
+import { type Customer } from "@/lib/data";
 
 const STORAGE_KEY = "cil.customers.v1";
 
@@ -38,33 +38,45 @@ function generateId(): string {
   return `C-${Date.now().toString(36)}-${idCounter}`.toUpperCase();
 }
 
-export function CustomersProvider({ children }: { children: React.ReactNode }) {
-  const [customers, setCustomers] = React.useState<Customer[]>(seedCustomers);
+export function CustomersProvider({
+  children,
+  initial,
+}: {
+  children: React.ReactNode;
+  initial: Customer[];
+}) {
+  // Seed customers come from D1 (server-provided `initial`). Buyer sign-ups are
+  // kept in a localStorage overlay until write-through (Phase D/E).
+  const [customers, setCustomers] = React.useState<Customer[]>(initial);
   const [hydrated, setHydrated] = React.useState(false);
+  const d1Ids = React.useMemo(() => new Set(initial.map((c) => c.id)), [initial]);
 
   /* eslint-disable react-hooks/set-state-in-effect */
   React.useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as Customer[];
-        if (Array.isArray(parsed) && parsed.length > 0) setCustomers(parsed);
+        const overlay = (JSON.parse(raw) as Customer[]).filter((c) => !d1Ids.has(c.id));
+        if (overlay.length > 0) setCustomers([...overlay, ...initial]);
       }
     } catch {
       /* ignore malformed storage */
     }
     setHydrated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  // Persist ONLY locally-created customers (ids not in D1).
   React.useEffect(() => {
     if (!hydrated) return;
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(customers));
+      const overlay = customers.filter((c) => !d1Ids.has(c.id));
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(overlay));
     } catch {
       /* ignore quota / unavailable storage */
     }
-  }, [customers, hydrated]);
+  }, [customers, hydrated, d1Ids]);
 
   const getCustomer = React.useCallback(
     (id: string) => customers.find((c) => c.id === id),

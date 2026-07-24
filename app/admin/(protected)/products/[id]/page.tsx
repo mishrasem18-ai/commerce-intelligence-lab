@@ -1,14 +1,10 @@
 import type { Metadata } from "next";
 import { ProductDetailView } from "@/components/products/product-detail-view";
-import { getProductById, products } from "@/lib/data/products";
+import { getProductById } from "@/lib/db/products";
 
-// Statically pre-render the known catalog; allow other ids (e.g. products
-// created or duplicated at runtime in the client store) to render on demand.
-export const dynamicParams = true;
-
-export function generateStaticParams() {
-  return products.map((product) => ({ id: product.id }));
-}
+// Products are served on demand from D1; runtime-created products (client
+// overlay) resolve via the store when not present in D1.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -16,7 +12,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const product = getProductById(id);
+  const product = await getProductById(id);
   return { title: product ? product.name : "Product" };
 }
 
@@ -26,7 +22,5 @@ export default async function ProductDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const product = getProductById(id) ?? null;
-
-  return <ProductDetailView id={id} initialProduct={product} />;
+  return <ProductDetailView id={id} initialProduct={await getProductById(id)} />;
 }

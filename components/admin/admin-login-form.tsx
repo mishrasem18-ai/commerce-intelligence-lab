@@ -21,10 +21,11 @@ export function AdminLoginForm() {
     if (hydrated && admin) router.replace("/admin/dashboard");
   }, [hydrated, admin, router]);
 
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSubmitting(true);
-    const result = signInAdmin(email, password);
+    setError("");
+    const result = await signInAdmin(email, password);
     if (result.ok) {
       router.replace("/admin/dashboard");
     } else {

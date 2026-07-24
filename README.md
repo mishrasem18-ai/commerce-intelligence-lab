@@ -38,12 +38,10 @@ the customer's totals.
 All admin routes live under `/admin/*` and are protected by middleware. Without an
 admin session you are redirected to `/admin/login`.
 
-**Demo admin credentials** (developer-facing only — never shown in the storefront):
-
-```
-Email:    admin@commercelab.io
-Password: admin123
-```
+**Admin credentials are configured through environment secrets and are not stored
+in the repository.** For local development, copy `.env.example` to `.env.local` and
+set the admin identity/password-hash variables (the built-in demo default lets you
+sign in locally without any setup). Rotate these before any production use.
 
 Buyer sessions and admin sessions are independent: a signed-in buyer cannot reach
 `/admin`, and an admin session does not create a buyer account.

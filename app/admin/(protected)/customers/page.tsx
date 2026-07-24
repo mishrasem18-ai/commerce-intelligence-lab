@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/cards/stat-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { CustomersView } from "@/components/tables/customers-view";
-import { customers } from "@/lib/data";
+import { getCustomers } from "@/lib/db/customers";
 import { formatNumber, formatPercent } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Customers" };
+export const dynamic = "force-dynamic";
 
-export default function CustomersPage() {
+export default async function CustomersPage() {
+  const customers = await getCustomers();
   const vip = customers.filter((c) => c.status === "VIP").length;
   const newCustomers = customers.filter((c) => c.status === "New").length;
 

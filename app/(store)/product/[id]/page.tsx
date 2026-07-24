@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
 import { BuyerProductDetail } from "@/components/store/buyer-product-detail";
-import { getProductById, products } from "@/lib/data/products";
+import { getProductById } from "@/lib/db/products";
 
-export const dynamicParams = true;
-
-export function generateStaticParams() {
-  return products.map((product) => ({ id: product.id }));
-}
+// Product detail is served on demand from D1 (no build-time static params).
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -14,7 +11,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const product = getProductById(id);
+  const product = await getProductById(id);
   return {
     title: {
       absolute: product ? `${product.name} · Aurora Market` : "Product · Aurora Market",
@@ -28,6 +25,6 @@ export default async function BuyerProductPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const product = getProductById(id) ?? null;
+  const product = await getProductById(id);
   return <BuyerProductDetail id={id} initialProduct={product} />;
 }

@@ -12,6 +12,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+// Uses the intentional demo analytics product set (not a migrated commerce
+// entity) — the live D1 catalog is consumed via the stores elsewhere.
 import { products } from "@/lib/data";
 import { formatCompact, formatCurrency } from "@/lib/utils";
 import { ChartTooltip } from "@/components/charts/chart-tooltip";

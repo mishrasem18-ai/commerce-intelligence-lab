@@ -11,7 +11,7 @@ import {
 } from "@/components/products/product-edit-dialog";
 import { useProducts } from "@/lib/store/products-store";
 import { downloadCsv } from "@/lib/export-csv";
-import type { Product } from "@/lib/data/products";
+import { categoryPlaceholderImage, type Product } from "@/lib/data/products";
 
 const CSV_COLUMNS = [
   { header: "ID", value: (p: Product) => p.id },
@@ -49,7 +49,7 @@ export function ProductsHeaderActions() {
       description: `${values.name} — added to the catalog.`,
       cost: Math.round(values.price * 0.5 * 100) / 100,
       rating: 4.5,
-      image: `https://picsum.photos/seed/${encodeURIComponent(values.sku)}/640/640`,
+      image: categoryPlaceholderImage(values.category, values.name),
       unitsSold: 0,
       revenue: 0,
     });

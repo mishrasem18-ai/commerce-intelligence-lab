@@ -19,6 +19,9 @@ import { CountryRevenueChart } from "@/components/charts/country-revenue-chart";
 import { RightPanel } from "@/components/dashboard/right-panel";
 import { DashboardRecentOrders } from "@/components/dashboard/dashboard-recent-orders";
 import { TopProductsList } from "@/components/dashboard/top-products-list";
+// The dashboard "Top Products" widget uses the intentional demo analytics
+// product set (with stock/trend fields), which is not a migrated commerce
+// entity — see Phase C notes. The live catalog lives in D1 via the stores.
 import { products } from "@/lib/data";
 
 export default function DashboardPage() {

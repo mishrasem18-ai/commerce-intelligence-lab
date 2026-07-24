@@ -34,7 +34,20 @@ export function ProductImage({
 }: ProductImageProps) {
   const [loaded, setLoaded] = React.useState(false);
   const [errored, setErrored] = React.useState(false);
+  const imgRef = React.useRef<HTMLImageElement>(null);
   const Icon = CATEGORY_ICON[category];
+
+  // Data-URI (and cached) images are frequently already `complete` before React
+  // attaches the onLoad handler, so onLoad may never fire — leaving the image
+  // stuck at opacity-0. Reconcile from img.complete whenever the source changes.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  React.useEffect(() => {
+    setLoaded(false);
+    setErrored(false);
+    const el = imgRef.current;
+    if (el && el.complete && el.naturalWidth > 0) setLoaded(true);
+  }, [src]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   return (
     <div
@@ -45,6 +58,7 @@ export function ProductImage({
     >
       {!errored && (
         <img
+          ref={imgRef}
           src={src}
           alt={alt}
           loading="lazy"

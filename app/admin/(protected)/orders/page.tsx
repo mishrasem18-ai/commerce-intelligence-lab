@@ -5,12 +5,14 @@ import { StatCard } from "@/components/cards/stat-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { OrdersView } from "@/components/tables/orders-view";
 import { OrdersHeaderActions } from "@/components/orders/orders-header-actions";
-import { orders } from "@/lib/data";
+import { getOrders } from "@/lib/db/orders";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Orders" };
+export const dynamic = "force-dynamic";
 
-export default function OrdersPage() {
+export default async function OrdersPage() {
+  const orders = await getOrders();
   const revenue = orders.reduce((sum, o) => sum + o.amount, 0);
   const aov = revenue / orders.length;
   const refunds = orders.filter((o) => o.status === "Refunded").length;
