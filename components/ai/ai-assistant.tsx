@@ -4,12 +4,21 @@ import * as React from "react";
 import { ArrowUp, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
-import { aiConversation, aiSuggestions, type AiMessage } from "@/lib/data";
+import {
+  aiConversation,
+  aiSuggestions,
+  kpis,
+  monthlySeries,
+  trafficSources,
+  conversionFunnel,
+  type AiMessage,
+} from "@/lib/data";
+import { LOW_STOCK_THRESHOLD } from "@/lib/data/products";
+import { useProducts } from "@/lib/store/products-store";
+import { useOrders } from "@/lib/store/orders-store";
+import { useCustomers } from "@/lib/store/customers-store";
+import { answerQuestion, type CommerceSnapshot } from "@/lib/ai/assistant-engine";
 import { cn } from "@/lib/utils";
-
-// Canned, deterministic replies — the brief forbids any backend or API.
-const CANNED_REPLY =
-  "Here's what I'm seeing: revenue is up 12.4% month-over-month to $128,450, led by the Audio category and stronger returning-customer activity (now 42% of orders). The main watch-item is conversion at 3.84% (down 0.7pts), concentrated in paid-social traffic. I'd suggest tightening paid-social targeting and promoting the Aurora Headphones bundle, which is trending +14%.";
 
 let idCounter = 0;
 function nextId() {
@@ -22,6 +31,26 @@ export function AiAssistant() {
   const [input, setInput] = React.useState("");
   const [thinking, setThinking] = React.useState(false);
   const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  // Live commerce data — the assistant answers from the same stores the admin
+  // dashboards read, so buyer activity (orders, inventory, signups) is
+  // reflected. `send` is rebuilt when this data changes so answers stay fresh.
+  const { products } = useProducts();
+  const { orders } = useOrders();
+  const { customers } = useCustomers();
+  const snapshot = React.useMemo<CommerceSnapshot>(
+    () => ({
+      products,
+      orders,
+      customers,
+      kpis,
+      monthly: monthlySeries,
+      traffic: trafficSources,
+      funnel: conversionFunnel,
+      lowStockThreshold: LOW_STOCK_THRESHOLD,
+    }),
+    [products, orders, customers],
+  );
 
   React.useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -39,14 +68,16 @@ export function AiAssistant() {
     ]);
     setInput("");
     setThinking(true);
+    // Route intent + build the answer from live data when the reply lands.
     window.setTimeout(() => {
+      const { content } = answerQuestion(trimmed, snapshot);
       setMessages((prev) => [
         ...prev,
-        { id: nextId(), role: "assistant", content: CANNED_REPLY },
+        { id: nextId(), role: "assistant", content },
       ]);
       setThinking(false);
     }, 900);
-  }, []);
+  }, [snapshot]);
 
   return (
     <div className="flex h-[calc(100vh-9.5rem)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
