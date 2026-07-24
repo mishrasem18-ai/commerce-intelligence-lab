@@ -2,6 +2,105 @@ import "server-only";
 import { getDb } from "@/lib/db/client";
 import type { Order, OrderLineItem, Address, PaymentMethod, PaymentStatus } from "@/lib/data";
 
+export interface CreateOrderInput {
+  userId: string;
+  customerName: string;
+  email: string;
+  country: string;
+  countryCode: string;
+  subtotalCents: number;
+  taxCents: number;
+  shippingCents: number;
+  totalCents: number;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  shipping: {
+    fullName: string;
+    mobile: string;
+    line1: string;
+    line2: string | null;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+  items: {
+    productId: string;
+    name: string;
+    sku: string;
+    unitPriceCents: number;
+    quantity: number;
+  }[];
+}
+
+function generateOrderNumber(): string {
+  const rand = crypto.getRandomValues(new Uint8Array(5));
+  const suffix = [...rand].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 7).toUpperCase();
+  return `ORD-${suffix}`;
+}
+
+/**
+ * Create an order atomically: insert the order + line items, decrement product
+ * inventory (the products.inventory CHECK(>=0) constraint rolls the whole batch
+ * back on oversell), and update the buyer's order metrics. D1 batches run as a
+ * single implicit transaction — all-or-nothing.
+ */
+export async function createOrder(
+  input: CreateOrderInput,
+): Promise<{ id: string; orderNumber: string; placedAt: string }> {
+  const db = await getDb();
+  const orderNumber = generateOrderNumber();
+  const id = `#${orderNumber}`;
+  const placedAt = new Date().toISOString();
+
+  const statements = [
+    db
+      .prepare(
+        "INSERT INTO orders (id, order_number, user_id, customer_name, email, country, country_code, " +
+          "status, payment_method, payment_status, subtotal_cents, tax_cents, shipping_cents, total_cents, " +
+          "ship_full_name, ship_mobile, ship_line1, ship_line2, ship_city, ship_state, ship_postal_code, " +
+          "ship_country, placed_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'Processing', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      )
+      .bind(
+        id, orderNumber, input.userId, input.customerName, input.email, input.country, input.countryCode,
+        input.paymentMethod, input.paymentStatus, input.subtotalCents, input.taxCents, input.shippingCents,
+        input.totalCents, input.shipping.fullName, input.shipping.mobile, input.shipping.line1,
+        input.shipping.line2, input.shipping.city, input.shipping.state, input.shipping.postalCode,
+        input.shipping.country, placedAt,
+      ),
+    ...input.items.map((it, i) =>
+      db
+        .prepare(
+          "INSERT INTO order_items (id, order_id, product_id, product_name, sku, unit_price_cents, quantity, line_total_cents) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(
+          `${id}-${i}`, id, it.productId, it.name, it.sku, it.unitPriceCents, it.quantity,
+          it.unitPriceCents * it.quantity,
+        ),
+    ),
+    // Oversell rolls the batch back via CHECK(inventory >= 0).
+    ...input.items.map((it) =>
+      db
+        .prepare(
+          "UPDATE products SET inventory = inventory - ?1, units_sold = units_sold + ?1, " +
+            "revenue_cents = revenue_cents + ?2, updated_at = datetime('now') WHERE id = ?3",
+        )
+        .bind(it.quantity, it.unitPriceCents * it.quantity, it.productId),
+    ),
+    db
+      .prepare(
+        "UPDATE users SET orders_count = orders_count + 1, spent_cents = spent_cents + ?, " +
+          "last_order_at = ?, status = CASE WHEN status = 'New' THEN 'Active' ELSE status END, " +
+          "updated_at = datetime('now') WHERE id = ?",
+      )
+      .bind(input.totalCents, placedAt.slice(0, 10), input.userId),
+  ];
+
+  await db.batch(statements);
+  return { id, orderNumber, placedAt };
+}
+
 interface OrderRow {
   id: string;
   order_number: string;

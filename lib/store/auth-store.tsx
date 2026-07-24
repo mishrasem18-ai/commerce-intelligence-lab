@@ -1,35 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { useCustomers } from "@/lib/store/customers-store";
 
 /*
- * Demo authentication. Admin and buyer sessions are intentionally separate.
- * Buyer credentials live in their own store, never mixed into the customer
- * profile that the admin can see. Cookies mirror the session so middleware can
- * gate routes server-side. Swap this module for a real auth provider later —
- * the surface (signIn/signOut/signup/login) is what components depend on.
+ * Authentication authority is SERVER-SIDE (Cloudflare D1). Both admin and buyer
+ * credentials are verified server-side (PBKDF2 against admin_users / users), and
+ * sessions are opaque HttpOnly cookies backed by the D1 `sessions` table:
+ *   admin: /api/admin/{login,logout,session}
+ *   buyer: /api/auth/{register,login,logout,session}
+ * No password, password hash, or session secret is ever shipped to the browser,
+ * and NO localStorage object can independently authenticate a user. This client
+ * store only mirrors the server-validated identity for UI purposes.
  */
-
-/*
- * Admin authentication is verified SERVER-SIDE against D1 (admin_users) via the
- * /api/admin/{login,logout,session} endpoints. No password or password hash is
- * shipped to the browser; the admin session is an HttpOnly cookie the server
- * manages (cil_admin). Buyer auth remains client/localStorage for now (Phase D).
- */
-
-const ACCOUNTS_KEY = "cil.buyerAccounts.v1";
-const BUYER_SESSION_KEY = "cil.buyerSession.v1";
 
 export const ADMIN_COOKIE = "cil_admin";
 export const BUYER_COOKIE = "cil_buyer";
-
-interface BuyerAccount {
-  email: string;
-  /** Obfuscated (not real hashing) — demo only, never displayed. */
-  secret: string;
-  customerId: string;
-}
 
 interface AdminSession {
   email: string;
@@ -60,9 +45,9 @@ interface AuthContextValue {
   hydrated: boolean;
   signInAdmin: (email: string, password: string) => Promise<AuthResult>;
   signOutAdmin: () => Promise<void>;
-  signupBuyer: (input: SignupInput) => AuthResult;
-  loginBuyer: (email: string, password: string) => AuthResult;
-  logoutBuyer: () => void;
+  signupBuyer: (input: SignupInput) => Promise<AuthResult>;
+  loginBuyer: (email: string, password: string) => Promise<AuthResult>;
+  logoutBuyer: () => Promise<void>;
 }
 
 const AuthContext = React.createContext<AuthContextValue | null>(null);
@@ -73,50 +58,28 @@ export function useAuth(): AuthContextValue {
   return ctx;
 }
 
-function setCookie(name: string, value: string) {
-  const expires = new Date(Date.now() + 7 * 864e5).toUTCString();
-  document.cookie = `${name}=${value}; expires=${expires}; path=/; SameSite=Lax`;
-}
-function deleteCookie(name: string) {
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
-}
-function obfuscate(value: string): string {
-  try {
-    return btoa(encodeURIComponent(value));
-  } catch {
-    return value;
-  }
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { addCustomer, getCustomerByEmail, getCustomer } = useCustomers();
-  const [accounts, setAccounts] = React.useState<BuyerAccount[]>([]);
   const [admin, setAdmin] = React.useState<AdminSession | null>(null);
   const [buyer, setBuyer] = React.useState<BuyerSession | null>(null);
   const [hydrated, setHydrated] = React.useState(false);
 
+  // Identity is resolved from server-validated sessions (HttpOnly cookie → D1).
   /* eslint-disable react-hooks/set-state-in-effect */
   React.useEffect(() => {
-    // Buyer session/accounts hydrate from localStorage (unchanged in this phase).
-    try {
-      const rawAccounts = window.localStorage.getItem(ACCOUNTS_KEY);
-      if (rawAccounts) setAccounts(JSON.parse(rawAccounts) as BuyerAccount[]);
-      const rawBuyer = window.localStorage.getItem(BUYER_SESSION_KEY);
-      if (rawBuyer) {
-        setBuyer(JSON.parse(rawBuyer) as BuyerSession);
-        setCookie(BUYER_COOKIE, "1");
-      }
-    } catch {
-      /* ignore malformed storage */
-    }
-    // Admin session is validated server-side (HttpOnly cookie → D1 sessions).
     let cancelled = false;
-    fetch("/api/admin/session", { credentials: "same-origin" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: { admin?: { email: string } | null } | null) => {
-        if (!cancelled && data?.admin) setAdmin({ email: data.admin.email });
+    Promise.all([
+      fetch("/api/admin/session", { credentials: "same-origin" })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
+      fetch("/api/auth/session", { credentials: "same-origin" })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
+    ])
+      .then(([adminData, buyerData]) => {
+        if (cancelled) return;
+        if (adminData?.admin) setAdmin({ email: adminData.admin.email });
+        if (buyerData?.buyer) setBuyer(buyerData.buyer as BuyerSession);
       })
-      .catch(() => {})
       .finally(() => {
         if (!cancelled) setHydrated(true);
       });
@@ -125,26 +88,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
-
-  React.useEffect(() => {
-    if (!hydrated) return;
-    try {
-      window.localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
-    } catch {
-      /* ignore */
-    }
-  }, [accounts, hydrated]);
-
-  const persistBuyer = (session: BuyerSession | null) => {
-    setBuyer(session);
-    if (session) {
-      window.localStorage.setItem(BUYER_SESSION_KEY, JSON.stringify(session));
-      setCookie(BUYER_COOKIE, "1");
-    } else {
-      window.localStorage.removeItem(BUYER_SESSION_KEY);
-      deleteCookie(BUYER_COOKIE);
-    }
-  };
 
   const signInAdmin = React.useCallback(
     async (email: string, password: string): Promise<AuthResult> => {
@@ -182,50 +125,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signupBuyer = React.useCallback(
-    (input: SignupInput): AuthResult => {
-      const email = input.email.trim().toLowerCase();
-      const taken =
-        accounts.some((a) => a.email === email) || Boolean(getCustomerByEmail(email));
-      if (taken) return { ok: false, error: "An account with this email already exists." };
-
-      const customer = addCustomer({
-        firstName: input.firstName.trim(),
-        lastName: input.lastName.trim(),
-        email,
-        mobile: input.mobile.trim(),
-      });
-      const account: BuyerAccount = {
-        email,
-        secret: obfuscate(input.password),
-        customerId: customer.id,
-      };
-      setAccounts((prev) => [...prev, account]);
-      persistBuyer({ customerId: customer.id, email, name: customer.name });
-      return { ok: true, customerId: customer.id };
+    async (input: SignupInput): Promise<AuthResult> => {
+      try {
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(input),
+        });
+        const data = (await res.json().catch(() => null)) as {
+          ok?: boolean;
+          error?: string;
+          buyer?: BuyerSession;
+        } | null;
+        if (res.ok && data?.ok && data.buyer) {
+          setBuyer(data.buyer);
+          return { ok: true, customerId: data.buyer.customerId };
+        }
+        return { ok: false, error: data?.error ?? "Could not create account." };
+      } catch {
+        return { ok: false, error: "Sign up failed." };
+      }
     },
-    [accounts, addCustomer, getCustomerByEmail],
+    [],
   );
 
   const loginBuyer = React.useCallback(
-    (email: string, password: string): AuthResult => {
-      const normalized = email.trim().toLowerCase();
-      const account = accounts.find((a) => a.email === normalized);
-      if (!account) return { ok: false, error: "No account found for this email." };
-      if (account.secret !== obfuscate(password)) {
-        return { ok: false, error: "Incorrect email or password." };
+    async (email: string, password: string): Promise<AuthResult> => {
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ email, password }),
+        });
+        const data = (await res.json().catch(() => null)) as {
+          ok?: boolean;
+          error?: string;
+          buyer?: BuyerSession;
+        } | null;
+        if (res.ok && data?.ok && data.buyer) {
+          setBuyer(data.buyer);
+          return { ok: true, customerId: data.buyer.customerId };
+        }
+        return { ok: false, error: data?.error ?? "Incorrect email or password." };
+      } catch {
+        return { ok: false, error: "Sign in failed." };
       }
-      const customer = getCustomer(account.customerId);
-      persistBuyer({
-        customerId: account.customerId,
-        email: normalized,
-        name: customer?.name ?? normalized,
-      });
-      return { ok: true, customerId: account.customerId };
     },
-    [accounts, getCustomer],
+    [],
   );
 
-  const logoutBuyer = React.useCallback(() => persistBuyer(null), []);
+  const logoutBuyer = React.useCallback(async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
+    } catch {
+      /* ignore */
+    }
+    setBuyer(null);
+  }, []);
 
   const value = React.useMemo<AuthContextValue>(
     () => ({

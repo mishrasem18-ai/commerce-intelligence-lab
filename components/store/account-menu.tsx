@@ -76,8 +76,8 @@ export function AccountMenu() {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onSelect={() => {
-            logoutBuyer();
+          onSelect={async () => {
+            await logoutBuyer();
             toast({ title: "Signed out", description: "You've been logged out." });
             router.push("/");
           }}

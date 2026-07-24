@@ -33,7 +33,7 @@ export function CheckoutView() {
   const router = useRouter();
   const { toast } = useToast();
   const { buyer, hydrated } = useAuth();
-  const { getCustomer, updateCustomer, recordOrder } = useCustomers();
+  const { getCustomer, updateCustomer } = useCustomers();
   const { addOrder } = useOrders();
   const { getProduct, decrementInventory } = useProducts();
   const { clear } = useCart();
@@ -58,27 +58,27 @@ export function CheckoutView() {
     if (hydrated && !buyer) router.replace("/login?redirect=/checkout");
   }, [hydrated, buyer, router]);
 
-  // Seed contact + address defaults once the customer is available (one-time).
+  // Seed contact + address defaults from the authenticated buyer (one-time).
   /* eslint-disable react-hooks/set-state-in-effect */
   React.useEffect(() => {
-    if (seeded.current || !customer) return;
+    if (seeded.current || !buyer) return;
     seeded.current = true;
-    setContactEmail(customer.email);
-    setContactMobile(customer.mobile ?? "");
+    setContactEmail(buyer.email);
+    setContactMobile(customer?.mobile ?? "");
     setNewAddr((prev) => ({
       ...prev,
-      fullName: customer.name,
-      mobile: customer.mobile ?? "",
+      fullName: buyer.name,
+      mobile: customer?.mobile ?? "",
     }));
-    if ((customer.addresses ?? []).length > 0) {
+    if (savedAddresses.length > 0) {
       setAddressMode("saved");
-      const def = customer.addresses!.find((a) => a.isDefault) ?? customer.addresses![0];
+      const def = savedAddresses.find((a) => a.isDefault) ?? savedAddresses[0];
       setSelectedAddressId(def.id);
     }
-  }, [customer]);
+  }, [buyer, customer, savedAddresses]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  if (!hydrated || !buyer || !customer) {
+  if (!hydrated || !buyer) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center text-sm text-muted-foreground">
         Loading checkout…
@@ -120,7 +120,7 @@ export function CheckoutView() {
       ...newAddr,
       isDefault: savedAddresses.length === 0,
     };
-    if (saveNewAddress) {
+    if (saveNewAddress && customer) {
       updateCustomer(customer.id, {
         addresses: [...savedAddresses, address],
       });
@@ -128,13 +128,13 @@ export function CheckoutView() {
     return address;
   };
 
-  const placeOrder = () => {
+  const placeOrder = async () => {
     if (!contactEmail.trim() || !contactMobile.trim()) {
       toast({ variant: "error", title: "Enter your contact email and mobile." });
       return;
     }
 
-    // Stock revalidation against the live product store.
+    // Fast client-side stock message; the server re-validates authoritatively.
     for (const line of lines) {
       const product = getProduct(line.product.id);
       if (!product || line.quantity > product.inventory) {
@@ -152,50 +152,54 @@ export function CheckoutView() {
     if (!shippingAddress) return;
 
     setPlacing(true);
+    try {
+      // Authoritative order creation is server-side: the buyer session is
+      // validated against D1 and prices/stock/totals are recomputed there. A
+      // fabricated localStorage buyer (no valid session) is rejected with 401.
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          items: lines.map((l) => ({ productId: l.product.id, quantity: l.quantity })),
+          shippingAddress: {
+            ...shippingAddress,
+            countryCode: COUNTRY_CODES[shippingAddress.country] ?? "IN",
+          },
+          contactEmail: contactEmail.trim(),
+          contactMobile: contactMobile.trim(),
+          paymentMethod: method,
+        }),
+      });
+      const data = (await res.json().catch(() => null)) as
+        | { ok?: boolean; error?: string; order?: Order; orderNumber?: string }
+        | null;
 
-    const now = new Date();
-    const suffix = `${now.getTime().toString(36)}`.slice(-7).toUpperCase();
-    const orderNumber = `ORD-${suffix}`;
-    const dateStr = now.toISOString().slice(0, 10);
-    const lineItems = lines.map((l) => ({
-      productId: l.product.id,
-      name: l.product.name,
-      sku: l.product.sku,
-      price: l.product.price,
-      quantity: l.quantity,
-    }));
-    const itemsCount = lines.reduce((sum, l) => sum + l.quantity, 0);
+      if (!res.ok || !data?.ok || !data.order) {
+        setPlacing(false);
+        if (res.status === 401) {
+          toast({ variant: "error", title: "Please sign in again to check out." });
+          router.replace("/login?redirect=/checkout");
+          return;
+        }
+        toast({ variant: "error", title: "Could not place order", description: data?.error });
+        if (res.status === 409) router.push("/cart");
+        return;
+      }
 
-    const order: Order = {
-      id: `#${orderNumber}`,
-      orderNumber,
-      customerId: customer.id,
-      customer: customer.name,
-      email: contactEmail.trim(),
-      country: shippingAddress.country,
-      countryCode: COUNTRY_CODES[shippingAddress.country] ?? "IN",
-      amount: totals.total,
-      status: "Processing",
-      date: dateStr,
-      items: itemsCount,
-      lineItems,
-      subtotal: totals.subtotal,
-      tax: totals.tax,
-      shipping: totals.shipping,
-      total: totals.total,
-      shippingAddress,
-      paymentMethod: method,
-      paymentStatus: method === "Card" ? "Paid" : "Pending",
-      createdAt: now.toISOString(),
-    };
-
-    addOrder(order);
-    decrementInventory(lineItems.map((li) => ({ productId: li.productId, quantity: li.quantity })));
-    recordOrder(customer.id, totals.total, dateStr);
-    clear();
-
-    toast({ variant: "success", title: "Order placed", description: orderNumber });
-    router.push(`/order-confirmation/${orderNumber}`);
+      // Mirror the D1-created order into the client stores for immediate display
+      // (D1 remains authoritative; a refresh re-reads it).
+      addOrder(data.order);
+      decrementInventory(
+        (data.order.lineItems ?? []).map((li) => ({ productId: li.productId, quantity: li.quantity })),
+      );
+      clear();
+      toast({ variant: "success", title: "Order placed", description: data.orderNumber });
+      router.push(`/order-confirmation/${data.orderNumber}`);
+    } catch {
+      setPlacing(false);
+      toast({ variant: "error", title: "Could not place order" });
+    }
   };
 
   return (

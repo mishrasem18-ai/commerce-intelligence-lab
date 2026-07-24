@@ -17,6 +17,7 @@ export interface D1PreparedStatement {
 }
 export interface D1Database {
   prepare(query: string): D1PreparedStatement;
+  batch(statements: D1PreparedStatement[]): Promise<D1Result<unknown>[]>;
 }
 
 /**
@@ -27,7 +28,18 @@ export interface D1Database {
  * Uses the async form of getCloudflareContext so it also resolves during
  * `next dev` (paired with initOpenNextCloudflareForDev in next.config.ts).
  */
+/**
+ * Test seam: automated tests inject an in-memory fake D1 here so the real query
+ * code in users.ts / session.ts / orders.ts can be exercised without the
+ * Cloudflare runtime. It is null in every production/dev code path.
+ */
+let testDb: D1Database | null = null;
+export function __setTestDb(db: D1Database | null): void {
+  testDb = db;
+}
+
 export async function getDb(): Promise<D1Database> {
+  if (testDb) return testDb;
   const { env } = await getCloudflareContext({ async: true });
   const db = (env as unknown as { DB?: D1Database }).DB;
   if (!db) {

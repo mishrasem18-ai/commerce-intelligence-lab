@@ -57,11 +57,11 @@ export function BuyerSignupForm({ redirectTo = "/account" }: { redirectTo?: stri
     return Object.keys(next).length === 0;
   };
 
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setFormError("");
     if (!validate()) return;
-    const result = signupBuyer({
+    const result = await signupBuyer({
       firstName: values.firstName,
       lastName: values.lastName,
       email: values.email,

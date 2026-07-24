@@ -51,8 +51,8 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
           })}
           <button
             type="button"
-            onClick={() => {
-              logoutBuyer();
+            onClick={async () => {
+              await logoutBuyer();
               toast({ title: "Signed out", description: "You've been logged out." });
               router.push("/");
             }}

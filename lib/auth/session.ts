@@ -1,8 +1,9 @@
 import "server-only";
 import { getDb } from "@/lib/db/client";
 
-/** Cookie carrying the opaque admin session token (server-managed, HttpOnly). */
+/** Cookies carrying opaque session tokens (server-managed, HttpOnly). */
 export const ADMIN_COOKIE = "cil_admin";
+export const BUYER_COOKIE = "cil_buyer";
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 function toHex(bytes: Uint8Array): string {
@@ -60,6 +61,46 @@ export async function getAdminSession(token: string): Promise<AdminSessionInfo |
     .first<{ aid: string; email: string; name: string | null }>();
   if (!row) return null;
   return { adminUserId: row.aid, email: row.email, name: row.name };
+}
+
+export interface BuyerSessionInfo {
+  userId: string;
+  email: string;
+  name: string;
+}
+
+/** Create a buyer session row and return the raw token + expiry for the cookie. */
+export async function createBuyerSession(
+  userId: string,
+): Promise<{ token: string; expiresAt: Date }> {
+  const db = await getDb();
+  const token = newToken();
+  const id = await hashToken(token);
+  const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
+  await db
+    .prepare("INSERT INTO sessions (id, kind, user_id, expires_at) VALUES (?, 'buyer', ?, ?)")
+    .bind(id, userId, expiresAt.toISOString())
+    .run();
+  return { token, expiresAt };
+}
+
+/** Resolve a valid (non-expired) buyer session from a raw token, or null.
+ * The JOIN guarantees the user still EXISTS in D1 — a session whose user row is
+ * gone (or was never persisted) resolves to null. */
+export async function getBuyerSession(token: string): Promise<BuyerSessionInfo | null> {
+  if (!token) return null;
+  const db = await getDb();
+  const id = await hashToken(token);
+  const row = await db
+    .prepare(
+      "SELECT s.user_id AS uid, u.email AS email, u.name AS name " +
+        "FROM sessions s JOIN users u ON u.id = s.user_id " +
+        "WHERE s.id = ? AND s.kind = 'buyer' AND s.expires_at > ?",
+    )
+    .bind(id, new Date().toISOString())
+    .first<{ uid: string; email: string; name: string }>();
+  if (!row) return null;
+  return { userId: row.uid, email: row.email, name: row.name };
 }
 
 /** Invalidate a session by its raw token (logout). */

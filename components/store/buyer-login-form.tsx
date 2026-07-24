@@ -20,10 +20,11 @@ export function BuyerLoginForm({ redirectTo = "/account" }: { redirectTo?: strin
     if (hydrated && buyer) router.replace(redirectTo);
   }, [hydrated, buyer, router, redirectTo]);
 
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSubmitting(true);
-    const result = loginBuyer(email, password);
+    setError("");
+    const result = await loginBuyer(email, password);
     if (result.ok) {
       router.replace(redirectTo);
     } else {
