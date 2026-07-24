@@ -1,6 +1,6 @@
-import { CalendarDays, Download, Plus } from "lucide-react";
+import Link from "next/link";
 import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { DashboardHeaderActions } from "@/components/dashboard/dashboard-header-actions";
 import { KpiGrid } from "@/components/dashboard/kpi-grid";
 import { ChartCard } from "@/components/charts/chart-card";
 import { RevenueTrendChart } from "@/components/charts/revenue-trend-chart";
@@ -25,22 +26,7 @@ export default function DashboardPage() {
       <PageHeader
         title="Dashboard"
         description="Welcome back — here's how your store is performing this month."
-        actions={
-          <>
-            <Button variant="outline" size="md">
-              <CalendarDays />
-              Last 30 days
-            </Button>
-            <Button variant="outline" size="md">
-              <Download />
-              Export
-            </Button>
-            <Button size="md">
-              <Plus />
-              New Report
-            </Button>
-          </>
-        }
+        actions={<DashboardHeaderActions />}
       />
 
       <KpiGrid />
@@ -83,9 +69,12 @@ export default function DashboardPage() {
         <Card className="xl:col-span-2">
           <CardHeader className="flex-row items-center justify-between space-y-0">
             <CardTitle>Recent Orders</CardTitle>
-            <Button variant="ghost" size="sm" className="text-primary">
+            <Link
+              href="/orders"
+              className={buttonVariants({ variant: "ghost", size: "sm" })}
+            >
               View all orders
-            </Button>
+            </Link>
           </CardHeader>
           <CardContent>
             <RecentOrdersTable orders={orders.slice(0, 6)} />
@@ -104,9 +93,12 @@ export default function DashboardPage() {
       <Card>
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle>Top Products</CardTitle>
-          <Button variant="ghost" size="sm" className="text-primary">
+          <Link
+            href="/products"
+            className={buttonVariants({ variant: "ghost", size: "sm" })}
+          >
             View catalog
-          </Button>
+          </Link>
         </CardHeader>
         <CardContent>
           <TopProductsList products={products.slice(0, 6)} />

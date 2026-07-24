@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Eye, MousePointerClick, Percent, Timer } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { DateRangeSelect } from "@/components/dashboard/date-range-select";
 import { StatCard } from "@/components/cards/stat-card";
 import { ChartCard } from "@/components/charts/chart-card";
 import { RevenueProfitChart } from "@/components/charts/revenue-profit-chart";
@@ -21,10 +21,16 @@ export default function AnalyticsPage() {
         title="Analytics"
         description="Deep-dive into revenue, conversion and audience performance."
         actions={
-          <Button variant="outline">
-            <Timer />
-            Last 12 months
-          </Button>
+          <DateRangeSelect
+            options={[
+              { value: "12m", label: "Last 12 months" },
+              { value: "6m", label: "Last 6 months" },
+              { value: "90d", label: "Last 90 days" },
+              { value: "30d", label: "Last 30 days" },
+            ]}
+            defaultValue="12m"
+            className="w-44"
+          />
         }
       />
 

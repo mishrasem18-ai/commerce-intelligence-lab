@@ -2,37 +2,34 @@
 
 import * as React from "react";
 import { Search } from "lucide-react";
-import { RecentOrdersTable } from "@/components/tables/recent-orders-table";
-import { useOrders } from "@/lib/store/orders-store";
-import { type OrderStatus } from "@/lib/data";
+import { CustomersTable } from "@/components/tables/customers-table";
+import { customers, type Customer } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
-const filters: Array<{ label: string; value: OrderStatus | "All" }> = [
+const filters: Array<{ label: string; value: Customer["status"] | "All" }> = [
   { label: "All", value: "All" },
-  { label: "Paid", value: "Paid" },
-  { label: "Pending", value: "Pending" },
-  { label: "Shipped", value: "Shipped" },
-  { label: "Refunded", value: "Refunded" },
-  { label: "Cancelled", value: "Cancelled" },
+  { label: "VIP", value: "VIP" },
+  { label: "Active", value: "Active" },
+  { label: "New", value: "New" },
+  { label: "At Risk", value: "At Risk" },
 ];
 
-export function OrdersView() {
-  const { orders } = useOrders();
-  const [active, setActive] = React.useState<OrderStatus | "All">("All");
+export function CustomersView() {
+  const [active, setActive] = React.useState<Customer["status"] | "All">("All");
   const [query, setQuery] = React.useState("");
 
   const filtered = React.useMemo(() => {
-    return orders.filter((order) => {
-      const matchesStatus = active === "All" || order.status === active;
-      const q = query.trim().toLowerCase();
+    const q = query.trim().toLowerCase();
+    return customers.filter((customer) => {
+      const matchesStatus = active === "All" || customer.status === active;
       const matchesQuery =
         !q ||
-        order.customer.toLowerCase().includes(q) ||
-        order.id.toLowerCase().includes(q) ||
-        order.email.toLowerCase().includes(q);
+        customer.name.toLowerCase().includes(q) ||
+        customer.email.toLowerCase().includes(q) ||
+        customer.country.toLowerCase().includes(q);
       return matchesStatus && matchesQuery;
     });
-  }, [orders, active, query]);
+  }, [active, query]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -42,8 +39,8 @@ export function OrdersView() {
             const isActive = active === filter.value;
             const count =
               filter.value === "All"
-                ? orders.length
-                : orders.filter((o) => o.status === filter.value).length;
+                ? customers.length
+                : customers.filter((c) => c.status === filter.value).length;
             return (
               <button
                 key={filter.value}
@@ -59,9 +56,7 @@ export function OrdersView() {
                 <span
                   className={cn(
                     "rounded-full px-1.5 text-[11px] tabular-nums",
-                    isActive
-                      ? "bg-white/20"
-                      : "bg-muted text-muted-foreground",
+                    isActive ? "bg-white/20" : "bg-muted text-muted-foreground",
                   )}
                 >
                   {count}
@@ -76,18 +71,18 @@ export function OrdersView() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search orders…"
-            aria-label="Search orders"
+            placeholder="Search customers…"
+            aria-label="Search customers"
             className="h-9 w-full rounded-lg border border-input bg-card pl-9 pr-3 text-sm shadow-sm outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-ring focus:ring-2 focus:ring-ring/20"
           />
         </div>
       </div>
 
       {filtered.length > 0 ? (
-        <RecentOrdersTable orders={filtered} />
+        <CustomersTable customers={filtered} />
       ) : (
         <div className="flex flex-col items-center justify-center gap-1 py-12 text-center">
-          <p className="text-sm font-medium text-foreground">No orders found</p>
+          <p className="text-sm font-medium text-foreground">No customers found</p>
           <p className="text-sm text-muted-foreground">
             Try a different status or search term.
           </p>

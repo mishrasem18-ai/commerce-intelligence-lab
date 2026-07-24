@@ -1,10 +1,11 @@
+import Link from "next/link";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { TodaySummary } from "@/components/dashboard/today-summary";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { NotificationsList } from "@/components/dashboard/notifications-list";
@@ -24,9 +25,12 @@ export function RightPanel() {
       <Card>
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle>Recent Activity</CardTitle>
-          <Button variant="ghost" size="sm" className="text-primary">
+          <Link
+            href="/activity"
+            className={buttonVariants({ variant: "ghost", size: "sm" })}
+          >
             View all
-          </Button>
+          </Link>
         </CardHeader>
         <CardContent>
           <ActivityFeed />

@@ -1,16 +1,10 @@
 import type { Metadata } from "next";
-import {
-  Download,
-  Receipt,
-  RotateCcw,
-  ShoppingCart,
-  Wallet,
-} from "lucide-react";
+import { Receipt, RotateCcw, ShoppingCart, Wallet } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/cards/stat-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { OrdersView } from "@/components/tables/orders-view";
+import { OrdersHeaderActions } from "@/components/orders/orders-header-actions";
 import { orders } from "@/lib/data";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
@@ -26,12 +20,7 @@ export default function OrdersPage() {
       <PageHeader
         title="Orders"
         description="Track, filter and manage every order across your storefront."
-        actions={
-          <Button variant="outline">
-            <Download />
-            Export CSV
-          </Button>
-        }
+        actions={<OrdersHeaderActions />}
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

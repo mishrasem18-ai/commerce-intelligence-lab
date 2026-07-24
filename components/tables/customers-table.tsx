@@ -1,3 +1,6 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableBody,
@@ -19,6 +22,9 @@ const statusVariant: Record<Customer["status"], BadgeProps["variant"]> = {
 };
 
 export function CustomersTable({ customers }: { customers: Customer[] }) {
+  const router = useRouter();
+  const open = (id: string) => router.push(`/customers/${id}`);
+
   return (
     <Table>
       <TableHeader>
@@ -33,7 +39,19 @@ export function CustomersTable({ customers }: { customers: Customer[] }) {
       </TableHeader>
       <TableBody>
         {customers.map((customer) => (
-          <TableRow key={customer.id}>
+          <TableRow
+            key={customer.id}
+            role="link"
+            tabIndex={0}
+            onClick={() => open(customer.id)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                open(customer.id);
+              }
+            }}
+            className="cursor-pointer focus:bg-muted focus:outline-none"
+          >
             <TableCell>
               <div className="flex items-center gap-2.5">
                 <Avatar name={customer.name} size="sm" />

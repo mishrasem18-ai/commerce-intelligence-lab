@@ -43,3 +43,17 @@ export function formatCompact(value: number): string {
     maximumFractionDigits: 1,
   }).format(value);
 }
+
+/** Format an ISO date string as "Jul 24, 2026". */
+export function formatDate(
+  iso: string,
+  options: Intl.DateTimeFormatOptions = {},
+): string {
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+    ...options,
+  }).format(new Date(iso));
+}

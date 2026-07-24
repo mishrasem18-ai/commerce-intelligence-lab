@@ -2,15 +2,9 @@ import type { Metadata } from "next";
 import { Crown, Repeat, UserPlus, Users } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { StatCard } from "@/components/cards/stat-card";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { CustomersTable } from "@/components/tables/customers-table";
+import { Card, CardContent } from "@/components/ui/card";
+import { CustomersView } from "@/components/tables/customers-view";
 import { customers } from "@/lib/data";
 import { formatNumber, formatPercent } from "@/lib/utils";
 
@@ -26,7 +20,7 @@ export default function CustomersPage() {
         title="Customers"
         description="Understand who buys from you and how they engage over time."
         actions={
-          <Button>
+          <Button disabled title="Customer creation isn't available in this demo yet">
             <UserPlus />
             Add Customer
           </Button>
@@ -64,14 +58,8 @@ export default function CustomersPage() {
       </div>
 
       <Card>
-        <CardHeader className="flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle>All Customers</CardTitle>
-          <div className="w-full sm:max-w-xs">
-            <Input placeholder="Search customers…" />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <CustomersTable customers={customers} />
+        <CardContent className="pt-6">
+          <CustomersView />
         </CardContent>
       </Card>
     </div>

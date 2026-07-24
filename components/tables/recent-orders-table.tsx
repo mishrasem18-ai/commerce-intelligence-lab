@@ -1,3 +1,6 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableBody,
@@ -15,7 +18,13 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
+    timeZone: "UTC",
   });
+}
+
+/** Route param for an order (ids are stored like "#ORD-7841"). */
+export function orderSlug(id: string): string {
+  return id.replace(/^#/, "");
 }
 
 interface RecentOrdersTableProps {
@@ -25,6 +34,10 @@ interface RecentOrdersTableProps {
 }
 
 export function RecentOrdersTable({ orders, compact }: RecentOrdersTableProps) {
+  const router = useRouter();
+
+  const open = (id: string) => router.push(`/orders/${orderSlug(id)}`);
+
   return (
     <Table>
       <TableHeader>
@@ -39,8 +52,20 @@ export function RecentOrdersTable({ orders, compact }: RecentOrdersTableProps) {
       </TableHeader>
       <TableBody>
         {orders.map((order) => (
-          <TableRow key={order.id}>
-            <TableCell className="font-medium tabular-nums text-foreground">
+          <TableRow
+            key={order.id}
+            role="link"
+            tabIndex={0}
+            onClick={() => open(order.id)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                open(order.id);
+              }
+            }}
+            className="cursor-pointer focus:bg-muted focus:outline-none"
+          >
+            <TableCell className="font-medium tabular-nums text-primary">
               {order.id}
             </TableCell>
             <TableCell>
