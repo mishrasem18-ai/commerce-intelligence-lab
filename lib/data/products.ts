@@ -6,20 +6,24 @@
  * client, avoiding hydration mismatches. No backend, no APIs.
  */
 
-export const PRODUCT_CATEGORIES = [
-  "Electronics",
-  "Fashion",
-  "Home",
-  "Sports",
-  "Books",
-  "Beauty",
-  "Furniture",
-  "Accessories",
-  "Gaming",
-  "Toys",
-] as const;
+import {
+  CATEGORIES,
+  type CategoryId,
+  type ProductCategory,
+} from "@/lib/catalog/categories";
 
-export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
+// Category identity lives in one place — `lib/catalog/categories.ts` — which
+// mirrors the `categories` table in D1. Re-exported here because most of the
+// app already imports categories from this module.
+export {
+  PRODUCT_CATEGORIES,
+  CATEGORIES,
+  categoryName,
+  categoryIdFromName,
+  resolveCategory,
+  ALL_CATEGORIES,
+} from "@/lib/catalog/categories";
+export type { ProductCategory, CategoryId, CategorySelection } from "@/lib/catalog/categories";
 
 export const PRODUCT_STATUSES = ["Active", "Draft", "Archived"] as const;
 
@@ -33,6 +37,13 @@ export interface Product {
   sku: string;
   name: string;
   description: string;
+  /**
+   * Canonical category identity (the D1 `categories.id` slug). This is what
+   * filtering matches on — never `category`, which is a display label.
+   * Always keep the pair in sync via `categoryFields()`.
+   */
+  categoryId: CategoryId;
+  /** Display label for `categoryId`, e.g. "Gaming". Presentation only. */
   category: ProductCategory;
   brand: string;
   price: number;
@@ -360,7 +371,9 @@ const TOTAL_PRODUCTS = 120;
 
 function buildProduct(index: number, usedNames: Set<string>): Product {
   const rng = mulberry32(index * 2654435761 + 101);
-  const category = PRODUCT_CATEGORIES[index % PRODUCT_CATEGORIES.length];
+  // Category is assigned by position, so CATEGORIES' order is load-bearing —
+  // it must stay identical to the `categories` table order in D1.
+  const { id: categoryId, name: category } = CATEGORIES[index % CATEGORIES.length];
   const blueprint = BLUEPRINTS[category];
 
   const brand = pick(rng, blueprint.brands);
@@ -424,6 +437,7 @@ function buildProduct(index: number, usedNames: Set<string>): Product {
     sku,
     name,
     description,
+    categoryId,
     category,
     brand,
     price,
@@ -493,20 +507,9 @@ export function getProductStats(list: Product[] = products): ProductStats {
 /*  Filtering / sorting option sources                                        */
 /* -------------------------------------------------------------------------- */
 
-export interface PriceBucket {
-  id: string;
-  label: string;
-  min: number;
-  max: number;
-}
-
-export const PRICE_BUCKETS: PriceBucket[] = [
-  { id: "under-25", label: "Under $25", min: 0, max: 25 },
-  { id: "25-100", label: "$25 – $100", min: 25, max: 100 },
-  { id: "100-250", label: "$100 – $250", min: 100, max: 250 },
-  { id: "250-500", label: "$250 – $500", min: 250, max: 500 },
-  { id: "over-500", label: "Over $500", min: 500, max: Infinity },
-];
+// Price buckets live with the rest of the (pure, testable) catalog query logic.
+export { PRICE_BUCKETS } from "@/lib/catalog/shop-query";
+export type { PriceBucket } from "@/lib/catalog/shop-query";
 
 export type ProductSortKey =
   | "newest"

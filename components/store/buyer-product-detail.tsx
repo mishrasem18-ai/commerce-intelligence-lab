@@ -68,8 +68,9 @@ export function BuyerProductDetail({
   const maxAddable = Math.max(0, product.inventory - inCart);
   const effectiveQty = Math.min(qty, Math.max(1, maxAddable));
 
+  // Related products match on the canonical category id, never the label.
   const related = buyerProducts(products)
-    .filter((p) => p.category === product.category && p.id !== product.id)
+    .filter((p) => p.categoryId === product.categoryId && p.id !== product.id)
     .slice(0, 4);
 
   const addToCart = () => {

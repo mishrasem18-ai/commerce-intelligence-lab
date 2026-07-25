@@ -7,7 +7,8 @@ import { BuyerProductCard } from "@/components/store/buyer-product-card";
 import { CATEGORY_ICON } from "@/components/products/category-visuals";
 import { useProducts } from "@/lib/store/products-store";
 import { buyerProducts } from "@/lib/commerce";
-import { PRODUCT_CATEGORIES } from "@/lib/data/products";
+import { CATEGORIES } from "@/lib/catalog/categories";
+import { categoryHref } from "@/lib/catalog/shop-query";
 import { cn } from "@/lib/utils";
 
 export function HomeView() {
@@ -41,7 +42,7 @@ export function HomeView() {
                 <ArrowRight />
               </Link>
               <Link
-                href="/shop?category=Electronics"
+                href={categoryHref("electronics")}
                 className={buttonVariants({ variant: "outline", size: "lg" })}
               >
                 Browse Electronics
@@ -78,18 +79,18 @@ export function HomeView() {
           Shop by category
         </h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {PRODUCT_CATEGORIES.map((category) => {
-            const Icon = CATEGORY_ICON[category];
+          {CATEGORIES.map((category) => {
+            const Icon = CATEGORY_ICON[category.name];
             return (
               <Link
-                key={category}
-                href={`/shop?category=${encodeURIComponent(category)}`}
+                key={category.id}
+                href={categoryHref(category.id)}
                 className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card p-5 text-center transition-colors hover:border-primary/40 hover:bg-accent/40"
               >
                 <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <Icon className="size-5" />
                 </span>
-                <span className="text-sm font-medium text-foreground">{category}</span>
+                <span className="text-sm font-medium text-foreground">{category.name}</span>
               </Link>
             );
           })}

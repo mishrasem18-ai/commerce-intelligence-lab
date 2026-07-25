@@ -2,16 +2,14 @@
 
 import * as React from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { StoreBrand } from "@/components/store/store-brand";
 import { StoreSearch } from "@/components/store/store-search";
 import { CartButton } from "@/components/store/cart-button";
 import { AccountMenu } from "@/components/store/account-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { PRODUCT_CATEGORIES } from "@/lib/data/products";
+import { CategoryNav } from "@/components/store/category-nav";
 
-const NAV_CATEGORIES = ["Electronics", "Fashion", "Home", "Gaming", "Beauty", "Sports"];
 const MOBILE_DRAWER_ID = "store-mobile-drawer";
 
 export function StoreHeader() {
@@ -72,25 +70,9 @@ export function StoreHeader() {
                 </button>
               </div>
               <StoreSearch onNavigate={closeDrawer} />
-              <nav className="flex flex-col">
-                <Link
-                  href="/shop"
-                  onClick={closeDrawer}
-                  className="rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent"
-                >
-                  All Products
-                </Link>
-                {PRODUCT_CATEGORIES.map((category) => (
-                  <Link
-                    key={category}
-                    href={`/shop?category=${encodeURIComponent(category)}`}
-                    onClick={closeDrawer}
-                    className="rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-accent"
-                  >
-                    {category}
-                  </Link>
-                ))}
-              </nav>
+              {/* Same component, same URL-derived active state as the desktop
+                  bar — mobile cannot drift from desktop. */}
+              <CategoryNav variant="stack" includeSecondary onNavigate={closeDrawer} />
             </div>
           </div>,
           document.body,
@@ -124,26 +106,10 @@ export function StoreHeader() {
         </div>
       </div>
 
-      {/* Category nav (desktop/tablet) — unchanged */}
-      <nav className="hidden border-t border-border/70 md:block">
-        <div className="mx-auto flex w-full max-w-7xl items-center gap-1 px-4 sm:px-6 lg:px-8">
-          <Link
-            href="/shop"
-            className="px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:text-primary"
-          >
-            All Products
-          </Link>
-          {NAV_CATEGORIES.map((category) => (
-            <Link
-              key={category}
-              href={`/shop?category=${encodeURIComponent(category)}`}
-              className="px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:text-primary"
-            >
-              {category}
-            </Link>
-          ))}
-        </div>
-      </nav>
+      {/* Category nav (desktop/tablet) */}
+      <div className="hidden border-t border-border/70 md:block">
+        <CategoryNav variant="bar" />
+      </div>
 
       {drawer}
     </header>

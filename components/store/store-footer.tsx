@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { StoreBrand } from "@/components/store/store-brand";
-import { PRODUCT_CATEGORIES } from "@/lib/data/products";
+import { PRIMARY_NAV_CATEGORIES } from "@/lib/catalog/categories";
+import { categoryHref } from "@/lib/catalog/shop-query";
 
 export function StoreFooter() {
   return (
@@ -16,13 +17,13 @@ export function StoreFooter() {
         <div>
           <p className="mb-3 text-sm font-semibold text-foreground">Shop</p>
           <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
-            {PRODUCT_CATEGORIES.slice(0, 5).map((category) => (
-              <li key={category}>
+            {PRIMARY_NAV_CATEGORIES.map((category) => (
+              <li key={category.id}>
                 <Link
-                  href={`/shop?category=${encodeURIComponent(category)}`}
+                  href={categoryHref(category.id)}
                   className="transition-colors hover:text-foreground"
                 >
-                  {category}
+                  {category.name}
                 </Link>
               </li>
             ))}

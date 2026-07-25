@@ -11,114 +11,94 @@ import {
   BUYER_GRID_CLASS,
 } from "@/components/store/buyer-product-card";
 import { useProducts } from "@/lib/store/products-store";
-import { buyerProducts } from "@/lib/commerce";
-import { PRICE_BUCKETS, PRODUCT_CATEGORIES, type Product } from "@/lib/data/products";
+import { ALL_CATEGORIES, CATEGORIES } from "@/lib/catalog/categories";
+import {
+  ALL_PRICES,
+  buildShopParams,
+  parseShopQuery,
+  PRICE_BUCKETS,
+  selectShopPage,
+  SHOP_PAGE_SIZE,
+  SHOP_SORT_KEYS,
+  SHOP_SORT_LABELS,
+  type ShopQuery,
+} from "@/lib/catalog/shop-query";
 import { formatNumber } from "@/lib/utils";
 
-const PAGE_SIZE = 24;
-
-type SortKey = "featured" | "price-asc" | "price-desc" | "rating" | "popularity";
-
-const SORT_OPTIONS: SelectOption[] = [
-  { value: "featured", label: "Featured" },
-  { value: "price-asc", label: "Price: Low to High" },
-  { value: "price-desc", label: "Price: High to Low" },
-  { value: "rating", label: "Rating" },
-  { value: "popularity", label: "Popularity" },
-];
-
-const SORT_KEYS = SORT_OPTIONS.map((o) => o.value);
-const DEFAULT_SORT: SortKey = "featured";
-
 const categoryOptions: SelectOption[] = [
-  { value: "all", label: "All categories" },
-  ...PRODUCT_CATEGORIES.map((c) => ({ value: c, label: c })),
+  { value: ALL_CATEGORIES, label: "All categories" },
+  ...CATEGORIES.map((c) => ({ value: c.id, label: c.name })),
 ];
 
 const priceOptions: SelectOption[] = [
-  { value: "all", label: "Any price" },
+  { value: ALL_PRICES, label: "Any price" },
   ...PRICE_BUCKETS.map((b) => ({ value: b.id, label: b.label })),
 ];
 
-const SORTERS: Record<SortKey, (a: Product, b: Product) => number> = {
-  featured: (a, b) => b.rating - a.rating || b.unitsSold - a.unitsSold,
-  "price-asc": (a, b) => a.price - b.price,
-  "price-desc": (a, b) => b.price - a.price,
-  rating: (a, b) => b.rating - a.rating,
-  popularity: (a, b) => b.unitsSold - a.unitsSold,
-};
+const sortOptions: SelectOption[] = SHOP_SORT_KEYS.map((key) => ({
+  value: key,
+  label: SHOP_SORT_LABELS[key],
+}));
 
-export function ShopView({
-  initialCategory = "all",
-  initialQuery = "",
-}: {
-  initialCategory?: string;
-  initialQuery?: string;
-}) {
+/**
+ * The storefront catalog.
+ *
+ * There is exactly ONE piece of view state — the URL. Category, search, price,
+ * sort and page are all derived from `useSearchParams()` on every render, and
+ * every control writes back to the URL. Nothing is mirrored into `useState`.
+ *
+ * That is the fix for the category desync bug: this component previously seeded
+ * `useState` from a server-rendered `initialCategory` prop. Because a shop→shop
+ * navigation only changes the query string, React reused the same component
+ * instance and the state initialiser never re-ran — so the server-rendered
+ * heading said "Gaming" while the client's stale state still filtered (and
+ * displayed in the dropdown) "Electronics". With the URL as the single source,
+ * heading, navigation highlight, dropdowns and grid are the same value by
+ * construction, on desktop and mobile alike.
+ *
+ * The one exception is the search box's *text*, which needs to echo keystrokes
+ * instantly; it is re-synced from the URL whenever the URL's `q` changes, so it
+ * can never disagree either (see `queryDraft` below).
+ */
+export function ShopView() {
   const { products } = useProducts();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Initial price/sort come from the URL too (category/query arrive as props from
-  // the server page). Read once on mount; local state drives the UI thereafter.
-  const [query, setQuery] = React.useState(initialQuery);
-  const [category, setCategory] = React.useState(initialCategory);
-  const [price, setPrice] = React.useState(() => {
-    const p = searchParams.get("price");
-    return p && PRICE_BUCKETS.some((b) => b.id === p) ? p : "all";
-  });
-  const [sort, setSort] = React.useState<SortKey>(() => {
-    const s = searchParams.get("sort");
-    return s && SORT_KEYS.includes(s) ? (s as SortKey) : DEFAULT_SORT;
-  });
-  const [page, setPage] = React.useState(1);
+  // THE source of truth. Re-parsed on every render, including after a
+  // client-side navigation from the header's category links.
+  const query = React.useMemo(() => parseShopQuery(searchParams), [searchParams]);
 
-  // Reflect active filters into the URL so refresh / share / back-forward
-  // reproduce the same view. Uses replace to avoid a history entry per change.
-  const syncUrl = React.useCallback(
-    (next: {
-      category?: string;
-      price?: string;
-      sort?: SortKey;
-      query?: string;
-    }) => {
-      const c = next.category ?? category;
-      const pr = next.price ?? price;
-      const s = next.sort ?? sort;
-      const q = (next.query ?? query).trim();
-      const params = new URLSearchParams();
-      if (c && c !== "all") params.set("category", c);
-      if (pr && pr !== "all") params.set("price", pr);
-      if (s && s !== DEFAULT_SORT) params.set("sort", s);
-      if (q) params.set("q", q);
-      const qs = params.toString();
+  // Local echo of the search text so typing stays responsive. Reset whenever
+  // the URL's `q` changes (React's "adjust state when a prop changes" pattern),
+  // which covers back/forward, a category link, and the header search box.
+  const [queryDraft, setQueryDraft] = React.useState(query.q);
+  const [lastUrlQuery, setLastUrlQuery] = React.useState(query.q);
+  if (query.q !== lastUrlQuery) {
+    setLastUrlQuery(query.q);
+    setQueryDraft(query.q);
+  }
+
+  /**
+   * Write a patch of the query back to the URL. Every filter change preserves
+   * the other filters — changing sort or price never clears the category, and
+   * changing the category keeps the current search/price/sort. Any filter
+   * change returns to page 1 unless the patch sets a page explicitly.
+   */
+  const updateQuery = React.useCallback(
+    (patch: Partial<ShopQuery>) => {
+      const next: ShopQuery = { ...query, page: 1, ...patch };
+      const qs = buildShopParams(next).toString();
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
-    [category, price, sort, query, pathname, router],
+    [query, pathname, router],
   );
 
-  const resetPage = () => setPage(1);
-
-  const filtered = React.useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const bucket = PRICE_BUCKETS.find((b) => b.id === price);
-    const result = buyerProducts(products).filter((p) => {
-      const matchesQuery =
-        !q ||
-        p.name.toLowerCase().includes(q) ||
-        p.brand.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q);
-      const matchesCategory = category === "all" || p.category === category;
-      const matchesPrice = !bucket || (p.price >= bucket.min && p.price < bucket.max);
-      return matchesQuery && matchesCategory && matchesPrice;
-    });
-    return result.sort(SORTERS[sort]);
-  }, [products, query, category, price, sort]);
-
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const safePage = Math.min(page, pageCount);
-  const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const { items, total, page, pageCount } = React.useMemo(
+    () => selectShopPage(products, query),
+    [products, query],
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -126,11 +106,10 @@ export function ShopView({
         <div className="relative w-full lg:max-w-sm">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            value={query}
+            value={queryDraft}
             onChange={(e) => {
-              setQuery(e.target.value);
-              resetPage();
-              syncUrl({ query: e.target.value });
+              setQueryDraft(e.target.value);
+              updateQuery({ q: e.target.value });
             }}
             placeholder="Search products…"
             aria-label="Search products"
@@ -140,35 +119,23 @@ export function ShopView({
         <div className="flex flex-wrap items-center gap-2">
           <Select
             label="Category"
-            value={category}
-            onValueChange={(v) => {
-              setCategory(v);
-              resetPage();
-              syncUrl({ category: v });
-            }}
+            value={query.category}
+            onValueChange={(value) => updateQuery({ category: parseCategory(value) })}
             options={categoryOptions}
             className="w-40"
           />
           <Select
             label="Price"
-            value={price}
-            onValueChange={(v) => {
-              setPrice(v);
-              resetPage();
-              syncUrl({ price: v });
-            }}
+            value={query.price}
+            onValueChange={(value) => updateQuery({ price: value })}
             options={priceOptions}
             className="w-36"
           />
           <Select
             label="Sort"
-            value={sort}
-            onValueChange={(v) => {
-              setSort(v as SortKey);
-              resetPage();
-              syncUrl({ sort: v as SortKey });
-            }}
-            options={SORT_OPTIONS}
+            value={query.sort}
+            onValueChange={(value) => updateQuery({ sort: parseSort(value) })}
+            options={sortOptions}
             align="end"
             className="w-48"
           />
@@ -176,12 +143,12 @@ export function ShopView({
       </div>
 
       <p className="text-sm text-muted-foreground">
-        {formatNumber(filtered.length)} {filtered.length === 1 ? "product" : "products"}
+        {formatNumber(total)} {total === 1 ? "product" : "products"}
       </p>
 
-      {pageItems.length > 0 ? (
+      {items.length > 0 ? (
         <div className={BUYER_GRID_CLASS}>
-          {pageItems.map((product) => (
+          {items.map((product) => (
             <BuyerProductCard key={product.id} product={product} />
           ))}
         </div>
@@ -194,11 +161,25 @@ export function ShopView({
         </div>
       )}
 
-      {filtered.length > PAGE_SIZE && (
+      {total > SHOP_PAGE_SIZE && (
         <div className="flex justify-center pt-2">
-          <Pagination page={safePage} pageCount={pageCount} onPageChange={setPage} />
+          <Pagination
+            page={page}
+            pageCount={pageCount}
+            onPageChange={(next) => updateQuery({ page: next })}
+          />
         </div>
       )}
     </div>
   );
+}
+
+// The Select is a plain string control; re-parse its value through the same
+// resolvers the URL uses so an unexpected value can't enter the query.
+function parseCategory(value: string): ShopQuery["category"] {
+  return parseShopQuery({ category: value }).category;
+}
+
+function parseSort(value: string): ShopQuery["sort"] {
+  return parseShopQuery({ sort: value }).sort;
 }

@@ -2,6 +2,17 @@
 
 import * as React from "react";
 import { type Product, type ProductStatus } from "@/lib/data/products";
+import { categoryFields, type CategoryId } from "@/lib/catalog/categories";
+
+/**
+ * A new product as supplied by the admin form. `categoryId` is optional — the
+ * store derives it from the chosen category name — but never inconsistent:
+ * both fields are re-derived from a single input on write.
+ */
+export type ProductDraft = Omit<
+  Product,
+  "id" | "createdAt" | "updatedAt" | "categoryId"
+> & { categoryId?: CategoryId };
 
 const STORAGE_KEY = "cil.products.v1";
 
@@ -10,7 +21,7 @@ interface ProductsContextValue {
   hydrated: boolean;
   getProduct: (id: string) => Product | undefined;
   updateProduct: (id: string, patch: Partial<Product>) => void;
-  addProduct: (draft: Omit<Product, "id" | "createdAt" | "updatedAt">) => Product;
+  addProduct: (draft: ProductDraft) => Product;
   duplicateProduct: (id: string) => Product | undefined;
   deleteProduct: (id: string) => void;
   toggleStatus: (id: string) => void;
@@ -70,7 +81,11 @@ export function ProductsProvider({
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const overlay = (JSON.parse(raw) as Product[]).filter((p) => !d1Ids.has(p.id));
+        const overlay = (JSON.parse(raw) as Product[])
+          .filter((p) => !d1Ids.has(p.id))
+          // Records persisted before categories gained canonical ids carry only
+          // a display name; re-derive the pair so they filter like any other.
+          .map((p) => ({ ...p, ...categoryFields(p.categoryId ?? p.category) }));
         if (overlay.length > 0) setProducts([...overlay, ...initial]);
       }
     } catch {
@@ -101,16 +116,30 @@ export function ProductsProvider({
     setProducts((prev) =>
       prev.map((product) =>
         product.id === id
-          ? { ...product, ...patch, updatedAt: new Date().toISOString() }
+          ? {
+              ...product,
+              ...patch,
+              // Re-derive both category fields from whichever one the caller
+              // supplied, so the canonical id the storefront filters on can
+              // never drift from the label the admin edited.
+              ...categoryFields(patch.categoryId ?? patch.category ?? product.categoryId),
+              updatedAt: new Date().toISOString(),
+            }
           : product,
       ),
     );
   }, []);
 
   const addProduct = React.useCallback(
-    (draft: Omit<Product, "id" | "createdAt" | "updatedAt">) => {
+    (draft: ProductDraft) => {
       const now = new Date().toISOString();
-      const created: Product = { ...draft, id: generateId(), createdAt: now, updatedAt: now };
+      const created: Product = {
+        ...draft,
+        ...categoryFields(draft.categoryId ?? draft.category),
+        id: generateId(),
+        createdAt: now,
+        updatedAt: now,
+      };
       setProducts((prev) => [created, ...prev]);
       return created;
     },

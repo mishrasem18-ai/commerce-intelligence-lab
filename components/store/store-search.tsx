@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import { ProductImage } from "@/components/products/product-image";
 import { useProducts } from "@/lib/store/products-store";
 import { buyerProducts } from "@/lib/commerce";
+import { matchesSearch, shopHref } from "@/lib/catalog/shop-query";
 import { cn, formatCurrency } from "@/lib/utils";
 
 /** Public search — buyer-visible products only. Never exposes admin entities. */
@@ -33,24 +34,21 @@ export function StoreSearch({
     return () => document.removeEventListener("mousedown", onPointer);
   }, [open]);
 
+  // Same matcher the shop grid uses, so these suggestions and the results page
+  // can never disagree about what a query matches.
   const results = React.useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
+    if (!query.trim()) return [];
     return buyerProducts(products)
-      .filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.brand.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q),
-      )
+      .filter((p) => matchesSearch(p, query))
       .slice(0, 6);
   }, [query, products]);
 
+  // A header search is a store-wide search: it deliberately starts a fresh
+  // shop query rather than narrowing whatever category is on screen.
   const goToShop = () => {
-    const q = query.trim();
     setOpen(false);
     onNavigate?.();
-    router.push(q ? `/shop?q=${encodeURIComponent(q)}` : "/shop");
+    router.push(shopHref({ q: query }));
   };
 
   const openProduct = (id: string) => {

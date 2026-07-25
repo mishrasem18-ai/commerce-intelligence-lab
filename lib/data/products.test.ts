@@ -17,6 +17,11 @@ import {
   PRODUCT_STATUSES,
   PRICE_BUCKETS,
 } from "./products.ts";
+import {
+  categoryIdFromName,
+  categoryName,
+  isCategoryId,
+} from "../catalog/categories.ts";
 
 const allowedCategories = new Set<string>(PRODUCT_CATEGORIES);
 const allowedStatuses = new Set<string>(PRODUCT_STATUSES);
@@ -30,6 +35,14 @@ test("catalog is non-empty and every product is field-valid", () => {
     assert.ok(p.brand.trim().length > 0, `empty brand: ${p.id}`);
     assert.ok(p.description.trim().length > 0, `empty description: ${p.id}`);
     assert.ok(allowedCategories.has(p.category), `bad category: ${p.id} ${p.category}`);
+    // The canonical id and the display label must always describe the same
+    // category — the pair is what storefront filtering and the UI each read.
+    assert.ok(isCategoryId(p.categoryId), `bad categoryId: ${p.id} ${p.categoryId}`);
+    assert.equal(
+      categoryName(p.categoryId),
+      p.category,
+      `categoryId/category mismatch: ${p.id}`,
+    );
     assert.ok(allowedStatuses.has(p.status), `bad status: ${p.id} ${p.status}`);
     assert.ok(typeof p.price === "number" && p.price > 0, `bad price: ${p.id}`);
     assert.ok(Number.isInteger(p.inventory) && p.inventory >= 0, `bad inventory: ${p.id}`);
@@ -70,7 +83,7 @@ test("SKUs and ids are unique", () => {
 
 test("every allowed category has products, and filtering returns only that category", () => {
   for (const category of PRODUCT_CATEGORIES) {
-    const inCategory = products.filter((p) => p.category === category);
+    const inCategory = products.filter((p) => p.categoryId === categoryIdFromName(category));
     assert.ok(inCategory.length > 0, `no products in ${category}`);
     assert.ok(
       inCategory.every((p) => p.category === category),
