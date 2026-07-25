@@ -16,6 +16,7 @@ import assert from "node:assert/strict";
 import { createFakeD1 } from "../../test/fake-d1.mjs";
 import { __setTestDb } from "./client.ts";
 import { getUserByEmail, createUser } from "./users.ts";
+import { getCustomerById } from "./customers.ts";
 import { hashPassword, verifyPassword } from "../auth/password.ts";
 import { createBuyerSession, getBuyerSession, deleteSession } from "../auth/session.ts";
 
@@ -127,4 +128,40 @@ test("logout deletes the session so it no longer resolves", async () => {
 test("a session pointing at a nonexistent user is rejected (checkout guard)", async () => {
   const { token } = await createBuyerSession("C-DOESNOTEXIST");
   assert.equal(await getBuyerSession(token), null);
+});
+
+// 13. The freshly registered buyer's FULL profile is immediately readable from
+// D1 by id. This is what /api/auth/{register,login,session} hands back to the
+// client, and it is why /account can render straight after the post-signup
+// navigation instead of waiting for a manual browser refresh.
+test("a just-registered buyer's profile is immediately readable from D1", async () => {
+  const buyer = await register("profile@example.com", "pw123456");
+  const customer = await getCustomerById(buyer.customerId);
+  assert.ok(customer, "profile must be queryable by id right after registration");
+  assert.equal(customer.id, buyer.customerId);
+  assert.equal(customer.email, "profile@example.com");
+  assert.equal(customer.name, "Test Buyer");
+  assert.equal(customer.mobile, "+1 555 0100");
+  // The profile handed to the client must never carry the password hash.
+  assert.ok(!JSON.stringify(customer).includes("pbkdf2"), "no hash in the client profile");
+});
+
+// 14. A session resolves to the same id whose profile is fetched — identity and
+// profile can never disagree.
+test("session identity and profile refer to the same D1 user", async () => {
+  const buyer = await register("pair@example.com", "pw123456");
+  const { token } = await createBuyerSession(buyer.customerId);
+  const session = await getBuyerSession(token);
+  assert.ok(session);
+  const customer = await getCustomerById(session.userId);
+  assert.ok(customer);
+  assert.equal(customer.id, session.userId);
+  assert.equal(customer.email, session.email);
+  assert.equal(customer.name, session.name);
+});
+
+// 15. An unknown id yields no profile (a session for a deleted user cannot
+// resurrect an account view).
+test("no profile is returned for an id that is not in D1", async () => {
+  assert.equal(await getCustomerById("C-DOESNOTEXIST"), null);
 });

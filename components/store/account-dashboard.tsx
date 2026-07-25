@@ -10,16 +10,22 @@ import {
 } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { OrderStatusBadge } from "@/components/tables/order-status-badge";
+import { AccountStateNotice } from "@/components/store/account-state-notice";
 import { useBuyerCustomer } from "@/lib/hooks/use-buyer-customer";
 import { useOrders } from "@/lib/store/orders-store";
 import { cn, formatCurrency } from "@/lib/utils";
 
 export function AccountDashboard() {
-  const { customer, hydrated } = useBuyerCustomer();
+  const { customer, state, refresh } = useBuyerCustomer();
   const { orders } = useOrders();
 
-  if (!hydrated || !customer) {
-    return <p className="text-sm text-muted-foreground">Loading…</p>;
+  if (state !== "ready" || !customer) {
+    return (
+      <AccountStateNotice
+        state={state === "ready" ? "error" : state}
+        onRetry={refresh}
+      />
+    );
   }
 
   const myOrders = orders

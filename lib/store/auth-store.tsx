@@ -1,6 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { useCustomers } from "@/lib/store/customers-store";
+import type { BuyerAuthStatus } from "@/lib/auth/buyer-state";
+import type { Customer } from "@/lib/data";
 
 /*
  * Authentication authority is SERVER-SIDE (Cloudflare D1). Both admin and buyer
@@ -11,6 +14,14 @@ import * as React from "react";
  * No password, password hash, or session secret is ever shipped to the browser,
  * and NO localStorage object can independently authenticate a user. This client
  * store only mirrors the server-validated identity for UI purposes.
+ *
+ * This store is the SINGLE client-side source of truth for "who is signed in".
+ * Every auth response (register / login / session) carries both the identity and
+ * the buyer's full D1 customer profile, and this store pushes that profile into
+ * the customers store. Account screens therefore never depend on the customer
+ * snapshot the root layout happened to render with — that snapshot predates a
+ * just-registered buyer and used to leave /account stuck on "Loading…" until a
+ * manual browser refresh remounted the providers.
  */
 
 export const ADMIN_COOKIE = "cil_admin";
@@ -39,10 +50,23 @@ interface AuthResult {
   customerId?: string;
 }
 
+/** Shape of every buyer auth response (register / login / session). */
+interface BuyerAuthPayload {
+  ok?: boolean;
+  error?: string;
+  buyer?: BuyerSession | null;
+  customer?: Customer | null;
+}
+
 interface AuthContextValue {
   admin: AdminSession | null;
   buyer: BuyerSession | null;
+  /** True once the initial session resolution has settled (any outcome). */
   hydrated: boolean;
+  /** Explicit buyer session state — never sticks on "loading". */
+  buyerStatus: BuyerAuthStatus;
+  /** Re-validate the buyer session against the server (used by error retries). */
+  refreshBuyer: () => Promise<void>;
   signInAdmin: (email: string, password: string) => Promise<AuthResult>;
   signOutAdmin: () => Promise<void>;
   signupBuyer: (input: SignupInput) => Promise<AuthResult>;
@@ -59,12 +83,49 @@ export function useAuth(): AuthContextValue {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { upsertCustomer } = useCustomers();
   const [admin, setAdmin] = React.useState<AdminSession | null>(null);
   const [buyer, setBuyer] = React.useState<BuyerSession | null>(null);
+  const [buyerStatus, setBuyerStatus] = React.useState<BuyerAuthStatus>("loading");
   const [hydrated, setHydrated] = React.useState(false);
 
+  /**
+   * Apply a buyer auth response: the identity AND the server's customer profile
+   * land in the same React batch, so no consumer ever observes "signed in but no
+   * profile" (the state that used to render an endless spinner).
+   */
+  const applyBuyerPayload = React.useCallback(
+    (data: BuyerAuthPayload | null) => {
+      if (data?.buyer) {
+        setBuyer(data.buyer);
+        if (data.customer) upsertCustomer(data.customer);
+        setBuyerStatus("authenticated");
+        return true;
+      }
+      setBuyer(null);
+      setBuyerStatus("unauthenticated");
+      return false;
+    },
+    [upsertCustomer],
+  );
+
+  /** Re-read the server-validated buyer session. Never throws. */
+  const refreshBuyer = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/auth/session", {
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error(`session request failed: ${res.status}`);
+      applyBuyerPayload((await res.json()) as BuyerAuthPayload);
+    } catch {
+      // Transport/server failure is NOT "signed out" — surface it as an error so
+      // the UI can offer a retry instead of spinning forever.
+      setBuyerStatus("error");
+    }
+  }, [applyBuyerPayload]);
+
   // Identity is resolved from server-validated sessions (HttpOnly cookie → D1).
-  /* eslint-disable react-hooks/set-state-in-effect */
   React.useEffect(() => {
     let cancelled = false;
     Promise.all([
@@ -72,22 +133,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .then((r) => (r.ok ? r.json() : null))
         .catch(() => null),
       fetch("/api/auth/session", { credentials: "same-origin" })
-        .then((r) => (r.ok ? r.json() : null))
-        .catch(() => null),
+        .then((r) => {
+          if (!r.ok) throw new Error(`session request failed: ${r.status}`);
+          return r.json() as Promise<BuyerAuthPayload>;
+        })
+        .catch(() => "error" as const),
     ])
       .then(([adminData, buyerData]) => {
         if (cancelled) return;
         if (adminData?.admin) setAdmin({ email: adminData.admin.email });
-        if (buyerData?.buyer) setBuyer(buyerData.buyer as BuyerSession);
+        if (buyerData === "error") setBuyerStatus("error");
+        else applyBuyerPayload(buyerData);
       })
       .finally(() => {
+        // Always settles — hydration can never be left pending.
         if (!cancelled) setHydrated(true);
       });
     return () => {
       cancelled = true;
     };
-  }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
+  }, [applyBuyerPayload]);
 
   const signInAdmin = React.useCallback(
     async (email: string, password: string): Promise<AuthResult> => {
@@ -133,13 +198,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           credentials: "same-origin",
           body: JSON.stringify(input),
         });
-        const data = (await res.json().catch(() => null)) as {
-          ok?: boolean;
-          error?: string;
-          buyer?: BuyerSession;
-        } | null;
+        const data = (await res.json().catch(() => null)) as BuyerAuthPayload | null;
         if (res.ok && data?.ok && data.buyer) {
-          setBuyer(data.buyer);
+          // Identity + profile become authoritative here — before the caller
+          // navigates — so /account renders on arrival with no refresh.
+          applyBuyerPayload(data);
           return { ok: true, customerId: data.buyer.customerId };
         }
         return { ok: false, error: data?.error ?? "Could not create account." };
@@ -147,7 +210,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { ok: false, error: "Sign up failed." };
       }
     },
-    [],
+    [applyBuyerPayload],
   );
 
   const loginBuyer = React.useCallback(
@@ -159,13 +222,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           credentials: "same-origin",
           body: JSON.stringify({ email, password }),
         });
-        const data = (await res.json().catch(() => null)) as {
-          ok?: boolean;
-          error?: string;
-          buyer?: BuyerSession;
-        } | null;
+        const data = (await res.json().catch(() => null)) as BuyerAuthPayload | null;
         if (res.ok && data?.ok && data.buyer) {
-          setBuyer(data.buyer);
+          applyBuyerPayload(data);
           return { ok: true, customerId: data.buyer.customerId };
         }
         return { ok: false, error: data?.error ?? "Incorrect email or password." };
@@ -173,7 +232,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { ok: false, error: "Sign in failed." };
       }
     },
-    [],
+    [applyBuyerPayload],
   );
 
   const logoutBuyer = React.useCallback(async () => {
@@ -183,6 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       /* ignore */
     }
     setBuyer(null);
+    setBuyerStatus("unauthenticated");
   }, []);
 
   const value = React.useMemo<AuthContextValue>(
@@ -190,13 +250,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       admin,
       buyer,
       hydrated,
+      buyerStatus,
+      refreshBuyer,
       signInAdmin,
       signOutAdmin,
       signupBuyer,
       loginBuyer,
       logoutBuyer,
     }),
-    [admin, buyer, hydrated, signInAdmin, signOutAdmin, signupBuyer, loginBuyer, logoutBuyer],
+    [
+      admin,
+      buyer,
+      hydrated,
+      buyerStatus,
+      refreshBuyer,
+      signInAdmin,
+      signOutAdmin,
+      signupBuyer,
+      loginBuyer,
+      logoutBuyer,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

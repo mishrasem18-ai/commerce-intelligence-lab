@@ -71,6 +71,17 @@ export function createFakeD1() {
         }
         return null;
       }
+      if (sql.includes("SELECT * FROM users WHERE id = ?")) {
+        // Full customer profile row (lib/db/customers.ts#getCustomerById).
+        const u = users.get(this.args[0]);
+        if (!u) return null;
+        return {
+          country: null,
+          country_code: null,
+          created_at: "2026-01-01T00:00:00.000Z",
+          ...u,
+        };
+      }
       if (sql.includes("FROM sessions s JOIN users u")) {
         const [id, gate] = this.args;
         const s = sessions.get(id);

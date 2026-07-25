@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { OrderStatusBadge } from "@/components/tables/order-status-badge";
+import { AccountStateNotice } from "@/components/store/account-state-notice";
 import { useBuyerCustomer } from "@/lib/hooks/use-buyer-customer";
 import { useOrders } from "@/lib/store/orders-store";
 import type { PaymentStatus } from "@/lib/data";
@@ -18,11 +19,16 @@ const paymentVariant: Record<PaymentStatus, BadgeProps["variant"]> = {
 };
 
 export function BuyerOrdersList() {
-  const { customer, hydrated } = useBuyerCustomer();
+  const { customer, state, refresh } = useBuyerCustomer();
   const { orders } = useOrders();
 
-  if (!hydrated || !customer) {
-    return <p className="text-sm text-muted-foreground">Loading…</p>;
+  if (state !== "ready" || !customer) {
+    return (
+      <AccountStateNotice
+        state={state === "ready" ? "error" : state}
+        onRetry={refresh}
+      />
+    );
   }
 
   const myOrders = orders

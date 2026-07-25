@@ -31,14 +31,15 @@ const EMPTY: FormState = {
 
 export function BuyerSignupForm({ redirectTo = "/account" }: { redirectTo?: string }) {
   const router = useRouter();
-  const { signupBuyer, buyer, hydrated } = useAuth();
+  const { signupBuyer, buyerStatus } = useAuth();
   const [values, setValues] = React.useState<FormState>(EMPTY);
   const [errors, setErrors] = React.useState<Partial<Record<keyof FormState, string>>>({});
   const [formError, setFormError] = React.useState("");
 
+  // An already-signed-in buyer never sees the signup form.
   React.useEffect(() => {
-    if (hydrated && buyer) router.replace(redirectTo);
-  }, [hydrated, buyer, router, redirectTo]);
+    if (buyerStatus === "authenticated") router.replace(redirectTo);
+  }, [buyerStatus, router, redirectTo]);
 
   const set = (key: keyof FormState, value: string) =>
     setValues((prev) => ({ ...prev, [key]: value }));

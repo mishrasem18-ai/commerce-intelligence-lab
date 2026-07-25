@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserByEmail } from "@/lib/db/users";
+import { getCustomerById } from "@/lib/db/customers";
 import { verifyPassword } from "@/lib/auth/password";
 import { createBuyerSession, BUYER_COOKIE } from "@/lib/auth/session";
 
@@ -25,9 +26,12 @@ export async function POST(request: Request) {
     }
 
     const { token, expiresAt } = await createBuyerSession(user.id);
+    // Same contract as register/session: identity + full profile in one response.
+    const customer = await getCustomerById(user.id);
     const res = NextResponse.json({
       ok: true,
       buyer: { customerId: user.id, email: user.email, name: user.name },
+      customer,
     });
     res.cookies.set(BUYER_COOKIE, token, {
       httpOnly: true,

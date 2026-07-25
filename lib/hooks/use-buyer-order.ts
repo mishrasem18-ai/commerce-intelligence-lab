@@ -13,9 +13,11 @@ export type BuyerOrderResult =
 /** Resolves an order by its number/slug and enforces buyer ownership. */
 export function useBuyerOrder(slug: string): BuyerOrderResult {
   const { orders, hydrated } = useOrders();
-  const { buyer, hydrated: authHydrated } = useAuth();
+  const { buyer, buyerStatus } = useAuth();
 
-  if (!hydrated || !authHydrated) return { status: "loading" };
+  // "loading" only while the session request is genuinely in flight; a failed
+  // session resolves to unauthorized rather than a permanent spinner.
+  if (!hydrated || buyerStatus === "loading") return { status: "loading" };
 
   const order = orders.find(
     (o) => o.orderNumber === slug || o.id.replace(/^#/, "") === slug,

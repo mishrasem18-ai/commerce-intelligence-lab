@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserByEmail, createUser } from "@/lib/db/users";
+import { getCustomerById } from "@/lib/db/customers";
 import { hashPassword } from "@/lib/auth/password";
 import { createBuyerSession, BUYER_COOKIE } from "@/lib/auth/session";
 
@@ -33,7 +34,13 @@ export async function POST(request: Request) {
     const buyer = await createUser({ firstName, lastName, email, mobile, passwordHash });
     const { token, expiresAt } = await createBuyerSession(buyer.customerId);
 
-    const res = NextResponse.json({ ok: true, buyer });
+    // Hand back the full D1 profile alongside the identity: the client seeds it
+    // straight into the customer store, so /account renders immediately after
+    // the post-signup navigation instead of waiting for a full page reload to
+    // re-fetch the server's customer snapshot.
+    const customer = await getCustomerById(buyer.customerId);
+
+    const res = NextResponse.json({ ok: true, buyer, customer });
     res.cookies.set(BUYER_COOKIE, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

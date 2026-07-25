@@ -12,6 +12,7 @@ import {
   validateAddress,
   type AddressDraft,
 } from "@/components/store/address-fields";
+import { AccountStateNotice } from "@/components/store/account-state-notice";
 import { useBuyerCustomer } from "@/lib/hooks/use-buyer-customer";
 import { useCustomers } from "@/lib/store/customers-store";
 import type { Address } from "@/lib/data";
@@ -35,7 +36,7 @@ function newAddressId() {
 }
 
 export function AddressesManager() {
-  const { customer, hydrated } = useBuyerCustomer();
+  const { customer, state, refresh } = useBuyerCustomer();
   const { updateCustomer } = useCustomers();
   const { toast } = useToast();
   const [mode, setMode] = React.useState<"list" | "add" | "edit">("list");
@@ -44,8 +45,13 @@ export function AddressesManager() {
   const [errors, setErrors] = React.useState<Partial<Record<keyof AddressDraft, string>>>({});
   const [pendingDelete, setPendingDelete] = React.useState<Address | null>(null);
 
-  if (!hydrated || !customer) {
-    return <p className="text-sm text-muted-foreground">Loading…</p>;
+  if (state !== "ready" || !customer) {
+    return (
+      <AccountStateNotice
+        state={state === "ready" ? "error" : state}
+        onRetry={refresh}
+      />
+    );
   }
 
   const addresses = customer.addresses ?? [];

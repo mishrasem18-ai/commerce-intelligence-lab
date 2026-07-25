@@ -32,7 +32,7 @@ function newAddressId() {
 export function CheckoutView() {
   const router = useRouter();
   const { toast } = useToast();
-  const { buyer, hydrated } = useAuth();
+  const { buyer, buyerStatus, refreshBuyer } = useAuth();
   const { getCustomer, updateCustomer } = useCustomers();
   const { addOrder } = useOrders();
   const { getProduct, decrementInventory } = useProducts();
@@ -53,10 +53,12 @@ export function CheckoutView() {
   const [placing, setPlacing] = React.useState(false);
   const seeded = React.useRef(false);
 
-  // Client backstop (middleware is the primary gate).
+  // Client backstop (middleware is the primary gate). Only a definitive
+  // "no session" bounces to login — a failed session request must not sign a
+  // valid buyer out mid-checkout.
   React.useEffect(() => {
-    if (hydrated && !buyer) router.replace("/login?redirect=/checkout");
-  }, [hydrated, buyer, router]);
+    if (buyerStatus === "unauthenticated") router.replace("/login?redirect=/checkout");
+  }, [buyerStatus, router]);
 
   // Seed contact + address defaults from the authenticated buyer (one-time).
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -78,7 +80,21 @@ export function CheckoutView() {
   }, [buyer, customer, savedAddresses]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  if (!hydrated || !buyer) {
+  if (buyerStatus === "error") {
+    return (
+      <div className="mx-auto flex min-h-[50vh] w-full max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
+        <p className="text-sm text-muted-foreground">
+          We couldn&apos;t confirm your session. Please check your connection and try
+          again.
+        </p>
+        <Button size="sm" onClick={() => void refreshBuyer()}>
+          Try again
+        </Button>
+      </div>
+    );
+  }
+
+  if (!buyer) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center text-sm text-muted-foreground">
         Loading checkout…

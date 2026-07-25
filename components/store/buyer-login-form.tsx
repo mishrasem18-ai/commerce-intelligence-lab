@@ -10,15 +10,16 @@ import { useAuth } from "@/lib/store/auth-store";
 
 export function BuyerLoginForm({ redirectTo = "/account" }: { redirectTo?: string }) {
   const router = useRouter();
-  const { loginBuyer, buyer, hydrated } = useAuth();
+  const { loginBuyer, buyerStatus } = useAuth();
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
 
+  // An already-signed-in buyer never sees the login form.
   React.useEffect(() => {
-    if (hydrated && buyer) router.replace(redirectTo);
-  }, [hydrated, buyer, router, redirectTo]);
+    if (buyerStatus === "authenticated") router.replace(redirectTo);
+  }, [buyerStatus, router, redirectTo]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();

@@ -11,11 +11,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
+import { AccountStateNotice } from "@/components/store/account-state-notice";
 import { useBuyerCustomer } from "@/lib/hooks/use-buyer-customer";
 import { useCustomers } from "@/lib/store/customers-store";
 
 export function BuyerProfileForm() {
-  const { customer, hydrated } = useBuyerCustomer();
+  const { customer, state, refresh } = useBuyerCustomer();
   const { updateCustomer } = useCustomers();
   const { toast } = useToast();
   const [firstName, setFirstName] = React.useState("");
@@ -31,8 +32,13 @@ export function BuyerProfileForm() {
     setMobile(customer.mobile ?? "");
   }, [customer]);
 
-  if (!hydrated || !customer) {
-    return <p className="text-sm text-muted-foreground">Loading…</p>;
+  if (state !== "ready" || !customer) {
+    return (
+      <AccountStateNotice
+        state={state === "ready" ? "error" : state}
+        onRetry={refresh}
+      />
+    );
   }
 
   const save = (event: React.FormEvent) => {

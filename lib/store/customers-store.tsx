@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { type Customer } from "@/lib/data";
+import { customerNeedsUpdate, mergeBuyerCustomer } from "@/lib/auth/buyer-state";
 
 const STORAGE_KEY = "cil.customers.v1";
 
@@ -20,6 +21,7 @@ interface CustomersContextValue {
   getCustomer: (id: string) => Customer | undefined;
   getCustomerByEmail: (email: string) => Customer | undefined;
   addCustomer: (input: NewCustomerInput) => Customer;
+  upsertCustomer: (customer: Customer) => void;
   updateCustomer: (id: string, patch: Partial<Customer>) => void;
   recordOrder: (id: string, amount: number, date: string) => void;
 }
@@ -111,6 +113,26 @@ export function CustomersProvider({
     return created;
   }, []);
 
+  /**
+   * Insert (or refresh) a server-authoritative customer record.
+   *
+   * The seed list is a point-in-time D1 snapshot taken when the root layout last
+   * rendered on the server; a buyer who registers *after* that snapshot would
+   * otherwise be missing from the store for the whole client-side session. The
+   * auth store calls this with the profile that comes back from
+   * register/login/session so the signed-in buyer is always present.
+   */
+  const upsertCustomer = React.useCallback((incoming: Customer) => {
+    setCustomers((prev) => {
+      const existing = prev.find((c) => c.id === incoming.id);
+      if (!customerNeedsUpdate(existing, incoming)) return prev; // no-op: same object identity
+      const merged = mergeBuyerCustomer(existing, incoming);
+      return existing
+        ? prev.map((c) => (c.id === incoming.id ? merged : c))
+        : [merged, ...prev];
+    });
+  }, []);
+
   const updateCustomer = React.useCallback((id: string, patch: Partial<Customer>) => {
     setCustomers((prev) =>
       prev.map((c) => {
@@ -151,6 +173,7 @@ export function CustomersProvider({
       getCustomer,
       getCustomerByEmail,
       addCustomer,
+      upsertCustomer,
       updateCustomer,
       recordOrder,
     }),
@@ -160,6 +183,7 @@ export function CustomersProvider({
       getCustomer,
       getCustomerByEmail,
       addCustomer,
+      upsertCustomer,
       updateCustomer,
       recordOrder,
     ],
