@@ -20,6 +20,7 @@ import { createAnalytics, type AnalyticsService } from "@/lib/analytics/analytic
 import { createGtmAdapter } from "@/lib/analytics/adapters/gtm-adapter";
 import { createContentsquareAdapter } from "@/lib/analytics/adapters/contentsquare-adapter";
 import { createAmtaAdapter } from "@/lib/analytics/adapters/amta-adapter";
+import { installAnalyticsDataInspector } from "@/lib/analytics/inspector";
 
 export const analytics: AnalyticsService = createAnalytics({
   adapters: [createGtmAdapter(), createContentsquareAdapter(), createAmtaAdapter()],
@@ -32,6 +33,11 @@ export const analytics: AnalyticsService = createAnalytics({
     }
   },
 });
+
+// Educational-lab inspector: `window.analyticsData` in DevTools returns a
+// read-only, deep-frozen snapshot of the canonical layer (see inspector.ts).
+// Browser only — the server singleton stays headless.
+installAnalyticsDataInspector(analytics);
 
 export type { AnalyticsService } from "@/lib/analytics/analytics";
 export type {

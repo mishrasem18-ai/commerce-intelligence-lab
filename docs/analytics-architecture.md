@@ -44,6 +44,20 @@ Google Consent Mode signal names, no GTM event shapes, no Adobe XDM/eVars/
 props, no Contentsquare APIs. Those translations live exclusively inside
 adapters/mappers, one step downstream.
 
+### `window.analyticsData` — the DevTools inspector
+
+Because this is a training lab, the canonical layer is inspectable from the
+browser console: typing `window.analyticsData` returns a **read-only,
+deep-frozen snapshot** (`lib/analytics/inspector.ts`) containing the recent
+scrubbed `AnalyticsData` envelopes, the neutral consent state, the non-PII
+user context and destination metadata. It is a getter that builds a fresh
+copy on every access — assignments are rejected and the returned object is
+immutable, so DevTools users can inspect but never mutate canonical state.
+It is NOT `window.dataLayer` and never aliases it; the two can be compared
+side-by-side in DevTools to see canonical vs. Google-mapped shapes.
+Application code never reads or writes it — tracking always goes through
+`analytics.track()`.
+
 ## Why canonical events are vendor-neutral
 
 Business components never call `window.dataLayer.push`, `gtag`, Contentsquare,
@@ -262,9 +276,13 @@ never appear.
 ## Current boundaries
 
 The repository itself configures no vendor: the GTM adapter activates only via
-the `NEXT_PUBLIC_GTM_CONTAINER_ID` environment variable (kept in gitignored
-`.env.local` / deployment env), and GA4 is wired **inside the GTM container**,
-not in application code. Contentsquare and AMTA Lab remain unconfigured
+the `NEXT_PUBLIC_GTM_CONTAINER_ID` environment variable, and GA4 is wired
+**inside the GTM container**, not in application code. Because `NEXT_PUBLIC_*`
+values are inlined into the client bundle at build time, each environment
+supplies the variable to its own build: local development uses gitignored
+`.env.local`, and production uses the `NEXT_PUBLIC_GTM_CONTAINER_ID` GitHub
+Actions **repository variable** consumed by `.github/workflows/deploy.yml`
+(both the build and deploy steps, since each runs `next build`). Contentsquare and AMTA Lab remain unconfigured
 placeholders. AMTA Lab is the author's own educational platform simulating
 Adobe-style capabilities — no actual Adobe Analytics, Launch, AEP, Web SDK,
 Target, CJA or AJO is integrated, and none will be. Because every destination
