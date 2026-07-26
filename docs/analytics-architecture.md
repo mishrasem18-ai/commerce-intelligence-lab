@@ -258,7 +258,7 @@ never appear.
 
 | Journey | Event | Where |
 | --- | --- | --- |
-| Any route change | `page.view` | `components/analytics/page-view-tracker.tsx` (store layout, Suspense-wrapped, URL-deduped) |
+| Any committed logical navigation | `page.view` | `components/analytics/page-view-tracker.tsx` — deterministic identity via `lib/analytics/navigation.ts`: identical URLs never re-track, and same-pathname `router.replace` query refinements (search keystrokes, filter/sort/pagination) count as page state, not navigations (router transition type supplied by `instrumentation-client.ts`) |
 | Shop grid | `commerce.view_item_list` | `shop-view.tsx` (debounced, signature-deduped) |
 | Search | `search.submit` | `shop-view.tsx` (settled query + result count) |
 | Card click | `commerce.select_item` | `buyer-product-card.tsx` |

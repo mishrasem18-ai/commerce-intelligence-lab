@@ -121,6 +121,35 @@ test("every canonical event is observable in the internal log regardless of cons
   assert.equal(dispatcher.getLog().length, 2);
 });
 
+test("a consent change never replays previously blocked or delivered events", () => {
+  let analyticsGranted = false;
+  const { adapter, received } = fakeAdapter("vendor");
+  const dispatcher = createDispatcher({
+    adapters: [adapter],
+    getConsent: () => consentWith(analyticsGranted),
+  });
+
+  // Event fired while denied: blocked, and stays blocked forever.
+  dispatcher.dispatch(makeEvent());
+  assert.equal(received.length, 0);
+
+  // Consent flips to granted (adapters get the consent signal only).
+  analyticsGranted = true;
+  dispatcher.notifyConsent(consentWith(true));
+  assert.equal(received.length, 0, "granting consent must not replay the blocked event");
+
+  // Only a NEW dispatch is delivered — exactly once.
+  dispatcher.dispatch(makeEvent());
+  assert.equal(received.length, 1);
+
+  // Flipping consent again re-delivers nothing.
+  analyticsGranted = false;
+  dispatcher.notifyConsent(consentWith(false));
+  analyticsGranted = true;
+  dispatcher.notifyConsent(consentWith(true));
+  assert.equal(received.length, 1, "consent churn must not re-deliver past events");
+});
+
 test("log subscribers are notified and the log can be cleared", () => {
   const dispatcher = createDispatcher({ adapters: [], getConsent: () => consentWith(true) });
   let notifications = 0;

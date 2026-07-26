@@ -4,21 +4,31 @@ import * as React from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { analytics } from "@/lib/analytics";
 import { pageTypeFromPath } from "@/lib/analytics/schema";
+import {
+  decidePageView,
+  markerMatchesUrl,
+  readNavigationMarker,
+  type TrackedLocation,
+} from "@/lib/analytics/navigation";
 
 /**
  * Canonical `page.view` for the App Router.
  *
- * One event per COMMITTED navigation: the effect keys on pathname+search, and
- * a module-level "last tracked URL" guard suppresses duplicates from React
- * Strict Mode's double-invoked effects, hydration re-renders and component
- * remounts. Navigating away and back produces a fresh view (the key changes
- * in between), which is the intended behaviour.
+ * Exactly ONE canonical page.view per committed LOGICAL navigation, enforced
+ * deterministically by `decidePageView` (lib/analytics/navigation.ts):
+ *  - identical URLs never re-track (Strict Mode double effects, hydration,
+ *    remounts, repeated clicks on the current URL);
+ *  - same-pathname `router.replace` query refinements (shop search
+ *    keystrokes, filter/sort/pagination) are page STATE, not navigations —
+ *    they are represented by search.submit / view_item_list instead;
+ *  - pushes, back/forward traversals, pathname changes and initial loads are
+ *    always tracked.
  *
  * Must be rendered inside <Suspense> (useSearchParams requirement for
  * statically rendered routes).
  */
 
-let lastTrackedUrl: string | null = null;
+let lastTracked: TrackedLocation | null = null;
 
 export function PageViewTracker() {
   const pathname = usePathname();
@@ -27,8 +37,17 @@ export function PageViewTracker() {
 
   React.useEffect(() => {
     const url = queryString ? `${pathname}?${queryString}` : pathname;
-    if (url === lastTrackedUrl) return;
-    lastTrackedUrl = url;
+    const marker = readNavigationMarker();
+    const navigationType =
+      marker && markerMatchesUrl(marker.url, url) ? marker.type : "unknown";
+    const decision = decidePageView({
+      last: lastTracked,
+      nextPathname: pathname,
+      nextUrl: url,
+      navigationType,
+    });
+    if (!decision.track) return;
+    lastTracked = { pathname, url };
     analytics.track("page.view", {
       page: {
         path: pathname,
