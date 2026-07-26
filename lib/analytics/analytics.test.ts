@@ -10,7 +10,7 @@ import { createAnalytics } from "./analytics.ts";
 import { createConsentStore, type ConsentStorage } from "./consent.ts";
 import { ANALYTICS_SCHEMA_VERSION } from "./schema.ts";
 import type { AnalyticsAdapter } from "./adapters/types.ts";
-import type { AnalyticsEvent } from "./schema.ts";
+import type { AnalyticsData } from "./schema.ts";
 
 function memoryStorage(): ConsentStorage {
   const data = new Map<string, string>();
@@ -22,8 +22,8 @@ function memoryStorage(): ConsentStorage {
   };
 }
 
-function fakeAdapter(): { adapter: AnalyticsAdapter; received: AnalyticsEvent[] } {
-  const received: AnalyticsEvent[] = [];
+function fakeAdapter(): { adapter: AnalyticsAdapter; received: AnalyticsData[] } {
+  const received: AnalyticsData[] = [];
   return {
     received,
     adapter: {

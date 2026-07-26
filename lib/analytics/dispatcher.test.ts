@@ -7,10 +7,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createDispatcher } from "./dispatcher.ts";
 import type { AnalyticsAdapter } from "./adapters/types.ts";
-import type { AnalyticsEvent } from "./schema.ts";
+import type { AnalyticsData } from "./schema.ts";
 import type { ConsentState } from "./consent.ts";
 
-function makeEvent(): AnalyticsEvent {
+function makeEvent(): AnalyticsData {
   return {
     event_name: "commerce.add_to_cart",
     event_id: "evt-1",
@@ -30,8 +30,8 @@ function consentWith(analytics: boolean): ConsentState {
 function fakeAdapter(
   name: string,
   options: { configured?: boolean; failing?: boolean } = {},
-): { adapter: AnalyticsAdapter; received: AnalyticsEvent[] } {
-  const received: AnalyticsEvent[] = [];
+): { adapter: AnalyticsAdapter; received: AnalyticsData[] } {
+  const received: AnalyticsData[] = [];
   return {
     received,
     adapter: {

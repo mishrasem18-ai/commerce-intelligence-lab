@@ -1,10 +1,13 @@
 /**
- * Central application-facing analytics service.
+ * Central application-facing analytics service — the producer of the
+ * canonical analyticsData layer.
  *
  * Business/UI code calls exactly one API — `analytics.track(name, payload)` —
- * and never touches window.dataLayer, gtag, vendor SDKs or adapters. The
- * service assembles the common envelope (id, timestamp, page/user/consent/app
- * context), scrubs PII, and hands the event to the dispatcher.
+ * and never touches window.dataLayer, gtag, vendor SDKs or adapters. Each
+ * call assembles a FRESH `AnalyticsData` envelope (id, timestamp,
+ * page/user/consent/app context) — never mutating a shared global, so stale
+ * page/product/cart/user data cannot leak between events — scrubs PII, and
+ * hands the envelope to the dispatcher.
  *
  * `track` NEVER throws: an analytics failure must never break add-to-cart,
  * checkout or navigation.
@@ -13,7 +16,7 @@
 import {
   ANALYTICS_SCHEMA_VERSION,
   pageTypeFromPath,
-  type AnalyticsEvent,
+  type AnalyticsData,
   type AnalyticsEventName,
   type AppContext,
   type EventPayloadMap,
@@ -101,6 +104,16 @@ export function createAnalytics(options: CreateAnalyticsOptions = {}): Analytics
     adapters: options.adapters ?? [],
     getConsent: () => consent.getState(),
   });
+  // Vendor consent signalling: adapters learn the persisted state at startup
+  // and every change thereafter (independent of event gating — see
+  // Dispatcher.notifyConsent). Failures here must never break the app.
+  try {
+    dispatcher.notifyConsent(consent.getState());
+  } catch {
+    /* ignore */
+  }
+  consent.subscribe((record) => dispatcher.notifyConsent(record.state));
+
   const getPageContext = options.getPageContext ?? defaultPageContext;
   const environment = options.environment ?? defaultEnvironment();
   const now = options.now ?? (() => new Date().toISOString());
@@ -110,12 +123,12 @@ export function createAnalytics(options: CreateAnalyticsOptions = {}): Analytics
 
   const track = ((
     name: AnalyticsEventName,
-    payload: Partial<Pick<AnalyticsEvent, "commerce" | "search" | "consent_change">> & {
+    payload: Partial<Pick<AnalyticsData, "commerce" | "search" | "consent_change">> & {
       page?: Partial<PageContext>;
     } = {},
   ) => {
     try {
-      const envelope: AnalyticsEvent = {
+      const envelope: AnalyticsData = {
         event_name: name,
         event_id: createId(),
         timestamp: now(),

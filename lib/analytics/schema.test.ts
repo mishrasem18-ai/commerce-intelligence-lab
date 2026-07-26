@@ -8,7 +8,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { ANALYTICS_EVENT_NAMES, pageTypeFromPath } from "./schema.ts";
 import { GA4_EVENT_NAME_MAP, mapEventToDataLayer } from "./adapters/gtm-adapter.ts";
-import type { AnalyticsEvent } from "./schema.ts";
+import type { AnalyticsData } from "./schema.ts";
 
 test("pageTypeFromPath covers every storefront journey", () => {
   assert.equal(pageTypeFromPath("/"), "home");
@@ -33,7 +33,7 @@ test("GTM mapping translates canonical names to GA4 names inside the adapter", (
   assert.equal(GA4_EVENT_NAME_MAP["commerce.add_to_cart"], "add_to_cart");
   assert.equal(GA4_EVENT_NAME_MAP["commerce.purchase"], "purchase");
 
-  const event: AnalyticsEvent = {
+  const event: AnalyticsData = {
     event_name: "commerce.add_to_cart",
     event_id: "evt-1",
     timestamp: "2026-07-26T10:00:00.000Z",

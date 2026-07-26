@@ -8,8 +8,8 @@
  * commerce functionality or other adapters.
  */
 
-import type { AnalyticsEvent } from "@/lib/analytics/schema";
-import type { ConsentCategory } from "@/lib/analytics/consent";
+import type { AnalyticsData } from "@/lib/analytics/schema";
+import type { ConsentCategory, ConsentState } from "@/lib/analytics/consent";
 
 export interface AnalyticsAdapter {
   /** Stable identifier shown in the debugger, e.g. "gtm". */
@@ -29,8 +29,24 @@ export interface AnalyticsAdapter {
   isConfigured(): boolean;
   /** One-time setup (script injection, SDK boot). Optional. */
   initialize?(): void;
-  /** Deliver one canonical event to the destination. */
-  track(event: AnalyticsEvent): void;
+  /** Deliver one canonical analyticsData envelope to the destination. */
+  track(event: AnalyticsData): void;
+  /**
+   * Optional one-line description of how this adapter would translate the
+   * given canonical event (e.g. `→ "add_to_cart" on window.dataLayer`).
+   * Shown in the Analytics Debugger so learners can see the
+   * canonical→vendor mapping without vendor knowledge leaking upstream.
+   */
+  describe?(event: AnalyticsData): string | undefined;
+  /**
+   * Called with the full consent state whenever it changes (and once with the
+   * persisted state at startup), REGARDLESS of the adapter's own consent
+   * category. This is the seam for vendor consent signalling — e.g. the GTM
+   * adapter translating the neutral state into Google Consent Mode — which by
+   * design must also be able to say "denied". Event delivery via `track` stays
+   * separately gated by the dispatcher.
+   */
+  onConsentChange?(state: ConsentState): void;
   /** Teardown when the adapter is unregistered. Optional. */
   destroy?(): void;
 }

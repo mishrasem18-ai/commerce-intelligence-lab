@@ -1,10 +1,28 @@
 /**
- * Canonical analytics event model for Aurora Market.
+ * analyticsData — Aurora Market's canonical, vendor-agnostic data-layer
+ * CONTRACT, formalized as the `AnalyticsData` interface below.
+ *
+ *   Aurora Market business interaction
+ *         ↓
+ *   analyticsData            (fresh AnalyticsData envelope per interaction)
+ *         ↓
+ *   Dispatcher               (consent gate + internal log)
+ *         ↓
+ *   Adapters                 (GTM → window.dataLayer → GTM → GA4,
+ *                             Contentsquare, AMTA Lab)
+ *
+ * analyticsData is a CONTRACT, not a mutable global object: every business
+ * interaction constructs a FRESH, immutable envelope conforming to this
+ * schema (see `analytics.track`). There is deliberately no long-lived
+ * `window.analyticsData` whose page/product/cart/user fields get overwritten
+ * in place — that pattern is exactly how stale data leaks into later events.
  *
  * Events here are BUSINESS events, not vendor events. Nothing in this file may
- * reference GTM, GA4, Contentsquare, Adobe or AMTA — vendor naming lives only
- * inside adapters (`lib/analytics/adapters/*`). `window.dataLayer` is never
- * the source of truth; these envelopes are.
+ * reference gtag, Google Consent Mode syntax, GTM event structures, Adobe XDM,
+ * eVars/props, or Contentsquare APIs — vendor naming lives only inside
+ * adapters (`lib/analytics/adapters/*`). `window.dataLayer` is strictly the
+ * Google/GTM adapter's OUTPUT transport; these envelopes are the source of
+ * truth.
  */
 
 import type { ConsentState, ConsentDecisionMethod } from "@/lib/analytics/consent";
@@ -160,10 +178,13 @@ export const ANALYTICS_EVENT_NAMES = [
 /* -------------------------------------------------------------------------- */
 
 /**
- * The common envelope every canonical event ships in. Adapters receive exactly
- * this shape (already PII-scrubbed) and translate it to their vendor format.
+ * The analyticsData contract: the common envelope every canonical event ships
+ * in. One fresh instance is created per business interaction. Adapters
+ * receive exactly this shape (already PII-scrubbed) and translate it to
+ * their vendor format — GA4 names, Consent Mode signals, Adobe-style
+ * educational structures etc. never appear in here.
  */
-export interface AnalyticsEvent<
+export interface AnalyticsData<
   N extends AnalyticsEventName = AnalyticsEventName,
 > {
   event_name: N;

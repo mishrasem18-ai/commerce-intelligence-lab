@@ -14,7 +14,7 @@
  *    system never pretends a vendor event was sent.
  */
 
-import type { AnalyticsEvent } from "@/lib/analytics/schema";
+import type { AnalyticsData } from "@/lib/analytics/schema";
 import type { ConsentState } from "@/lib/analytics/consent";
 import type { AnalyticsAdapter } from "@/lib/analytics/adapters/types";
 
@@ -32,16 +32,23 @@ export interface AdapterDispatchResult {
 }
 
 export interface DispatchRecord {
-  event: AnalyticsEvent;
+  event: AnalyticsData;
   results: AdapterDispatchResult[];
   /** Paths redacted by the PII guard while building the envelope. */
   piiViolations: string[];
 }
 
 export interface Dispatcher {
-  dispatch(event: AnalyticsEvent, piiViolations?: string[]): DispatchRecord;
+  dispatch(event: AnalyticsData, piiViolations?: string[]): DispatchRecord;
   register(adapter: AnalyticsAdapter): void;
   listAdapters(): AnalyticsAdapter[];
+  /**
+   * Propagate a consent state to every CONFIGURED adapter's
+   * `onConsentChange` — deliberately not gated by the adapter's consent
+   * category, because vendor consent signalling (e.g. Google Consent Mode)
+   * must also carry "denied". Adapter faults are isolated.
+   */
+  notifyConsent(state: ConsentState): void;
   /** Newest-last log of recent dispatches (bounded ring buffer). */
   getLog(): readonly DispatchRecord[];
   clearLog(): void;
@@ -81,7 +88,7 @@ export function createDispatcher(options: {
 
   const sendToAdapter = (
     adapter: AnalyticsAdapter,
-    event: AnalyticsEvent,
+    event: AnalyticsData,
     consent: ConsentState,
   ): AdapterDispatchResult => {
     const base = { adapter: adapter.name, label: adapter.label };
@@ -97,7 +104,13 @@ export function createDispatcher(options: {
         };
       }
       adapter.track(event);
-      return { ...base, status: "delivered" };
+      let detail: string | undefined;
+      try {
+        detail = adapter.describe?.(event);
+      } catch {
+        /* a describe failure must not taint a successful delivery */
+      }
+      return { ...base, status: "delivered", ...(detail ? { detail } : {}) };
     } catch (error) {
       return {
         ...base,
@@ -129,6 +142,15 @@ export function createDispatcher(options: {
     },
     register,
     listAdapters: () => [...adapters],
+    notifyConsent(state) {
+      for (const adapter of adapters) {
+        try {
+          if (adapter.isConfigured()) adapter.onConsentChange?.(state);
+        } catch {
+          /* a faulty adapter must not affect others or the caller */
+        }
+      }
+    },
     getLog: () => log,
     clearLog: () => {
       log = [];

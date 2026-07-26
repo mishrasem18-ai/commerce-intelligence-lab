@@ -6,6 +6,11 @@
  *   import { analytics } from "@/lib/analytics";
  *   analytics.track("commerce.add_to_cart", { commerce: ... });
  *
+ * Every `track` call produces a fresh canonical `AnalyticsData` envelope —
+ * the vendor-agnostic analyticsData layer that adapters (GTM →
+ * window.dataLayer → GA4, Contentsquare, AMTA Lab) consume. Components never
+ * see vendor APIs.
+ *
  * The singleton is module-scoped, so every component shares one dispatcher,
  * one consent store and one event log. On the server it exists but is inert
  * (no storage, empty page context); all real tracking happens client-side.
@@ -30,7 +35,7 @@ export const analytics: AnalyticsService = createAnalytics({
 
 export type { AnalyticsService } from "@/lib/analytics/analytics";
 export type {
-  AnalyticsEvent,
+  AnalyticsData,
   AnalyticsEventName,
   CommerceContext,
   CommerceItem,

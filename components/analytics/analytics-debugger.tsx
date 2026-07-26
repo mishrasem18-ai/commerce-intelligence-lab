@@ -11,9 +11,11 @@ import { cn } from "@/lib/utils";
 /**
  * Development/training Analytics Debugger.
  *
- * Shows the CANONICAL events generated while browsing — envelope, consent
- * snapshot and honest per-destination dispatch status ("Not configured" until
- * real vendors exist in Phase 2; never pretends a vendor hit happened).
+ * Shows the CANONICAL analyticsData envelopes generated while browsing —
+ * the vendor-agnostic data layer — plus each adapter's honest dispatch
+ * status and, when delivered, how the adapter translated the canonical
+ * event into vendor terms (e.g. GTM: mapped to "add_to_cart" on
+ * window.dataLayer). It never pretends a vendor hit happened.
  *
  * Safety: it renders only the already-PII-scrubbed envelopes from the
  * dispatcher log. Passwords, cookies, session tokens and raw user records
@@ -80,6 +82,9 @@ export function AnalyticsDebugger() {
         <h2 className="text-sm font-semibold text-foreground">
           Analytics Debugger
         </h2>
+        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+          canonical layer: analyticsData
+        </span>
         <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-[11px] tabular-nums text-muted-foreground">
           {events.length} event{events.length === 1 ? "" : "s"}
         </span>
@@ -126,6 +131,14 @@ export function AnalyticsDebugger() {
             </span>
           ))}
         </div>
+        <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+          analyticsData (canonical, vendor-agnostic) → dispatcher → adapters.
+          {adapters.some((a) => a.name === "gtm" && a.isConfigured()) && (
+            <> GTM adapter → window.dataLayer → GTM container → GA4 (tags are
+            configured inside the container).</>
+          )}{" "}
+          window.dataLayer is GTM output only — never the source of truth.
+        </p>
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">
@@ -169,9 +182,15 @@ export function AnalyticsDebugger() {
                           )}
                         >
                           {result.label}: {STATUS_LABEL[result.status]}
+                          {result.status === "delivered" && result.detail
+                            ? ` — ${result.detail}`
+                            : ""}
                         </span>
                       ))}
                     </div>
+                    <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      analyticsData (canonical envelope)
+                    </p>
                     <pre className="max-h-64 overflow-auto rounded-lg bg-muted/60 p-2 text-[11px] leading-relaxed text-foreground/90">
                       {JSON.stringify(event, null, 2)}
                     </pre>
@@ -184,8 +203,9 @@ export function AnalyticsDebugger() {
       </div>
 
       <p className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
-        Canonical events only — PII is redacted before events reach this log.
-        No vendor destinations are configured in Phase 1.
+        Canonical analyticsData envelopes only — PII is redacted before events
+        reach this log or any adapter. Vendor payloads (e.g. window.dataLayer)
+        are derived from these envelopes inside adapters.
       </p>
     </aside>
   );
