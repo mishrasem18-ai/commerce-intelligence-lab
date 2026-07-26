@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useCustomers } from "@/lib/store/customers-store";
+import { analytics } from "@/lib/analytics";
 import type { BuyerAuthStatus } from "@/lib/auth/buyer-state";
 import type { Customer } from "@/lib/data";
 
@@ -100,10 +101,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setBuyer(data.buyer);
         if (data.customer) upsertCustomer(data.customer);
         setBuyerStatus("authenticated");
+        // Analytics identity is ONLY the internal customer id — never the
+        // buyer's email or name.
+        analytics.setUserContext({
+          authentication_state: "authenticated",
+          customer_id: data.buyer.customerId,
+        });
         return true;
       }
       setBuyer(null);
       setBuyerStatus("unauthenticated");
+      analytics.setUserContext({ authentication_state: "guest" });
       return false;
     },
     [upsertCustomer],
@@ -203,6 +211,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Identity + profile become authoritative here — before the caller
           // navigates — so /account renders on arrival with no refresh.
           applyBuyerPayload(data);
+          // Canonical signup event — identity context only, no PII payload.
+          analytics.track("user.sign_up");
           return { ok: true, customerId: data.buyer.customerId };
         }
         return { ok: false, error: data?.error ?? "Could not create account." };
@@ -225,6 +235,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = (await res.json().catch(() => null)) as BuyerAuthPayload | null;
         if (res.ok && data?.ok && data.buyer) {
           applyBuyerPayload(data);
+          // Canonical login event — identity context only, no PII payload.
+          analytics.track("user.login");
           return { ok: true, customerId: data.buyer.customerId };
         }
         return { ok: false, error: data?.error ?? "Incorrect email or password." };
@@ -243,6 +255,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setBuyer(null);
     setBuyerStatus("unauthenticated");
+    // Track while the identity context still holds the customer id, then reset.
+    analytics.track("user.logout");
+    analytics.setUserContext({ authentication_state: "guest" });
   }, []);
 
   const value = React.useMemo<AuthContextValue>(

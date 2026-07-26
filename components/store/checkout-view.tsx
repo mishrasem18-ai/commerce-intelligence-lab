@@ -22,12 +22,21 @@ import { useOrders } from "@/lib/store/orders-store";
 import { useProducts } from "@/lib/store/products-store";
 import { useCart } from "@/lib/store/cart-store";
 import { useCartDetails } from "@/lib/hooks/use-cart-details";
+import { analytics } from "@/lib/analytics";
+import { cartCommerce, createOnceTracker, orderCommerce } from "@/lib/analytics/tracking";
 import type { Address, Order, PaymentMethod } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 function newAddressId() {
   return `addr-${Date.now().toString(36)}-${Math.floor(performance.now())}`;
 }
+
+/**
+ * commerce.purchase fires only from the SUCCESSFUL /api/orders response —
+ * never on page load, failed creation, re-render or refresh. Module-level so
+ * even a checkout remount cannot re-announce an already-tracked order.
+ */
+const purchaseTracked = createOnceTracker();
 
 export function CheckoutView() {
   const router = useRouter();
@@ -59,6 +68,17 @@ export function CheckoutView() {
   React.useEffect(() => {
     if (buyerStatus === "unauthenticated") router.replace("/login?redirect=/checkout");
   }, [buyerStatus, router]);
+
+  // Canonical begin_checkout — once per checkout visit, only when a signed-in
+  // buyer actually reaches the form with items in the cart.
+  const beginTracked = React.useRef(false);
+  React.useEffect(() => {
+    if (beginTracked.current || !buyer || lines.length === 0) return;
+    beginTracked.current = true;
+    analytics.track("commerce.begin_checkout", {
+      commerce: { ...cartCommerce(lines, totals.total), checkout_step: "begin" },
+    });
+  }, [buyer, lines, totals]);
 
   // Seed contact + address defaults from the authenticated buyer (one-time).
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -167,6 +187,20 @@ export function CheckoutView() {
     const shippingAddress = resolveShippingAddress();
     if (!shippingAddress) return;
 
+    // Shipping and payment details are now complete — the single-page
+    // checkout's equivalent of the shipping/payment steps. Only step metadata
+    // and cart contents are tracked; the address itself never enters analytics.
+    analytics.track("commerce.add_shipping_info", {
+      commerce: { ...cartCommerce(lines, totals.total), checkout_step: "shipping" },
+    });
+    analytics.track("commerce.add_payment_info", {
+      commerce: {
+        ...cartCommerce(lines, totals.total),
+        checkout_step: "payment",
+        payment_method: method,
+      },
+    });
+
     setPlacing(true);
     try {
       // Authoritative order creation is server-side: the buyer session is
@@ -201,6 +235,11 @@ export function CheckoutView() {
         toast({ variant: "error", title: "Could not place order", description: data?.error });
         if (res.status === 409) router.push("/cart");
         return;
+      }
+
+      // Canonical purchase — exactly once per created order (see tracker above).
+      if (purchaseTracked.first(data.order.id)) {
+        analytics.track("commerce.purchase", { commerce: orderCommerce(data.order) });
       }
 
       // Mirror the D1-created order into the client stores for immediate display

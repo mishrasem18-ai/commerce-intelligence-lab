@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
@@ -9,6 +10,9 @@ import { ProductImage } from "@/components/products/product-image";
 import { OrderSummary } from "@/components/store/order-summary";
 import { useCart } from "@/lib/store/cart-store";
 import { useCartDetails } from "@/lib/hooks/use-cart-details";
+import { analytics } from "@/lib/analytics";
+import { cartCommerce, productCommerce } from "@/lib/analytics/tracking";
+import type { Product } from "@/lib/data/products";
 import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +20,25 @@ export function CartView() {
   const router = useRouter();
   const { setQuantity, removeItem, clear } = useCart();
   const { lines, totals, hasStockIssue } = useCartDetails();
+
+  // Canonical view_cart — once per visit to the cart page (the ref absorbs
+  // re-renders and Strict Mode; cart contents are attached from the first
+  // hydrated, non-empty snapshot).
+  const viewTracked = React.useRef(false);
+  React.useEffect(() => {
+    if (viewTracked.current || lines.length === 0) return;
+    viewTracked.current = true;
+    analytics.track("commerce.view_cart", {
+      commerce: cartCommerce(lines, totals.total),
+    });
+  }, [lines, totals]);
+
+  const handleRemove = (product: Product, quantity: number) => {
+    removeItem(product.id);
+    analytics.track("commerce.remove_from_cart", {
+      commerce: productCommerce(product, { quantity }),
+    });
+  };
 
   if (lines.length === 0) {
     return (
@@ -81,7 +104,7 @@ export function CartView() {
                     <button
                       type="button"
                       aria-label={`Remove ${product.name}`}
-                      onClick={() => removeItem(product.id)}
+                      onClick={() => handleRemove(product, quantity)}
                       className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-danger"
                     >
                       <Trash2 className="size-4" />

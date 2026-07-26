@@ -11,7 +11,13 @@ import {
   BUYER_GRID_CLASS,
 } from "@/components/store/buyer-product-card";
 import { useProducts } from "@/lib/store/products-store";
-import { ALL_CATEGORIES, CATEGORIES } from "@/lib/catalog/categories";
+import { analytics } from "@/lib/analytics";
+import { listCommerce } from "@/lib/analytics/tracking";
+import {
+  ALL_CATEGORIES,
+  CATEGORIES,
+  categorySelectionLabel,
+} from "@/lib/catalog/categories";
 import {
   ALL_PRICES,
   buildShopParams,
@@ -100,6 +106,32 @@ export function ShopView() {
     [products, query],
   );
 
+  // Canonical view_item_list + search.submit. Debounced because typing in the
+  // search box rewrites the URL per keystroke; only the settled state counts.
+  // Refs dedupe repeats (and Strict Mode double effects); a remount after
+  // navigating away and back deliberately counts as a fresh list view.
+  const lastListKey = React.useRef<string | null>(null);
+  const lastSearchTerm = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    const listKey = [query.category, query.price, query.sort, query.page, query.q].join("|");
+    const timer = window.setTimeout(() => {
+      if (listKey !== lastListKey.current) {
+        lastListKey.current = listKey;
+        analytics.track("commerce.view_item_list", {
+          commerce: listCommerce(items, categorySelectionLabel(query.category)),
+        });
+      }
+      const term = query.q.trim();
+      if (term && term !== lastSearchTerm.current) {
+        lastSearchTerm.current = term;
+        analytics.track("search.submit", {
+          search: { query: term, results_count: total },
+        });
+      }
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [query, items, total]);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -149,7 +181,11 @@ export function ShopView() {
       {items.length > 0 ? (
         <div className={BUYER_GRID_CLASS}>
           {items.map((product) => (
-            <BuyerProductCard key={product.id} product={product} />
+            <BuyerProductCard
+              key={product.id}
+              product={product}
+              listName={categorySelectionLabel(query.category)}
+            />
           ))}
         </div>
       ) : (

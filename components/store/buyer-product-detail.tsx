@@ -20,6 +20,8 @@ import { CATEGORY_ICON } from "@/components/products/category-visuals";
 import { useCart } from "@/lib/store/cart-store";
 import { useProducts } from "@/lib/store/products-store";
 import { useToast } from "@/components/ui/toast";
+import { analytics } from "@/lib/analytics";
+import { productCommerce } from "@/lib/analytics/tracking";
 import { buyerProducts, isPurchasable } from "@/lib/commerce";
 import type { Product } from "@/lib/data/products";
 import { formatCurrency } from "@/lib/utils";
@@ -38,6 +40,16 @@ export function BuyerProductDetail({
   const [qty, setQty] = React.useState(1);
 
   const product = getProduct(id) ?? initialProduct ?? null;
+  const viewable = !!product && isPurchasable(product);
+
+  // Canonical view_item — once per product id, not per re-render (the ref
+  // also absorbs Strict Mode's double effect run).
+  const viewedIdRef = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!product || !viewable || viewedIdRef.current === product.id) return;
+    viewedIdRef.current = product.id;
+    analytics.track("commerce.view_item", { commerce: productCommerce(product) });
+  }, [product, viewable]);
 
   if (!product || (hydrated && !isPurchasable(product))) {
     if (!product && !hydrated) {
@@ -84,6 +96,11 @@ export function BuyerProductDetail({
       return;
     }
     addItem(product.id, Math.min(effectiveQty, maxAddable));
+    analytics.track("commerce.add_to_cart", {
+      commerce: productCommerce(product, {
+        quantity: Math.min(effectiveQty, maxAddable),
+      }),
+    });
     toast({
       variant: "success",
       title: "Added to cart",
@@ -93,7 +110,14 @@ export function BuyerProductDetail({
 
   const buyNow = () => {
     if (outOfStock) return;
-    if (maxAddable > 0) addItem(product.id, Math.min(effectiveQty, maxAddable));
+    if (maxAddable > 0) {
+      addItem(product.id, Math.min(effectiveQty, maxAddable));
+      analytics.track("commerce.add_to_cart", {
+        commerce: productCommerce(product, {
+          quantity: Math.min(effectiveQty, maxAddable),
+        }),
+      });
+    }
     router.push("/checkout");
   };
 
@@ -223,7 +247,7 @@ export function BuyerProductDetail({
           </h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {related.map((p) => (
-              <BuyerProductCard key={p.id} product={p} />
+              <BuyerProductCard key={p.id} product={p} listName="related_products" />
             ))}
           </div>
         </section>

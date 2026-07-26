@@ -7,10 +7,19 @@ import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/products/product-image";
 import { useCart } from "@/lib/store/cart-store";
 import { useToast } from "@/components/ui/toast";
+import { analytics } from "@/lib/analytics";
+import { productCommerce } from "@/lib/analytics/tracking";
 import type { Product } from "@/lib/data/products";
 import { formatCurrency } from "@/lib/utils";
 
-export function BuyerProductCard({ product }: { product: Product }) {
+export function BuyerProductCard({
+  product,
+  listName,
+}: {
+  product: Product;
+  /** Canonical list context for select_item/add_to_cart analytics. */
+  listName?: string;
+}) {
   const { items, addItem } = useCart();
   const { toast } = useToast();
 
@@ -29,12 +38,25 @@ export function BuyerProductCard({ product }: { product: Product }) {
       return;
     }
     addItem(product.id, 1);
+    analytics.track("commerce.add_to_cart", {
+      commerce: productCommerce(product, { quantity: 1, listName }),
+    });
     toast({ variant: "success", title: "Added to cart", description: product.name });
+  };
+
+  const handleSelect = () => {
+    analytics.track("commerce.select_item", {
+      commerce: productCommerce(product, { listName }),
+    });
   };
 
   return (
     <Card className="group flex flex-col overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5">
-      <Link href={`/product/${product.id}`} className="relative block">
+      <Link
+        href={`/product/${product.id}`}
+        onClick={handleSelect}
+        className="relative block"
+      >
         <ProductImage
           src={product.image}
           alt={product.name}
@@ -62,6 +84,7 @@ export function BuyerProductCard({ product }: { product: Product }) {
 
         <Link
           href={`/product/${product.id}`}
+          onClick={handleSelect}
           className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors hover:text-primary"
         >
           {product.name}

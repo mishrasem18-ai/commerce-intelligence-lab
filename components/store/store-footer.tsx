@@ -1,4 +1,8 @@
 import Link from "next/link";
+import {
+  AnalyticsDebuggerLink,
+  CookieSettingsLink,
+} from "@/components/analytics/analytics-footer-links";
 import { StoreBrand } from "@/components/store/store-brand";
 import { PRIMARY_NAV_CATEGORIES } from "@/lib/catalog/categories";
 import { categoryHref } from "@/lib/catalog/shop-query";
@@ -57,6 +61,12 @@ export function StoreFooter() {
             <li>Shipping &amp; Returns</li>
             <li>Contact Us</li>
             <li>FAQ</li>
+            <li>
+              <CookieSettingsLink />
+            </li>
+            <li>
+              <AnalyticsDebuggerLink />
+            </li>
           </ul>
         </div>
       </div>
