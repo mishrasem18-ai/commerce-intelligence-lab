@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { analytics } from "@/lib/analytics";
 import {
   decidePageView,
+  locationAfter,
   markerMatchesUrl,
   readNavigationMarker,
   type TrackedLocation,
@@ -69,12 +70,13 @@ export function PageViewTracker() {
       nextUrl: url,
       navigationType,
     });
-    if (!decision.track) return;
     const page = resolvePageContext(pathname, queryString);
-    // Data-dependent title not registered yet: wait (re-runs on registration).
-    if (page.title === null) return;
-    lastTracked = { pathname, url };
-    analytics.track("page.view", { page: { ...page, title: page.title } });
+    // Data-dependent title not registered yet: wait (re-runs on registration)
+    // without advancing the location, so the pending view is still emitted.
+    if (decision.track && page.title === null) return;
+    lastTracked = locationAfter(decision, lastTracked, { pathname, url });
+    if (!decision.track) return;
+    analytics.track("page.view", { page: { ...page, title: page.title! } });
   }, [pathname, queryString, titlesVersion]);
 
   return null;

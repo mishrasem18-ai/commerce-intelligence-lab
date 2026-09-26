@@ -8,6 +8,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   decidePageView,
+  locationAfter,
   markerMatchesUrl,
   NAVIGATION_MARKER_KEY,
   readNavigationMarker,
@@ -31,10 +32,8 @@ function simulate(
       nextUrl: step.url,
       navigationType: step.navigationType,
     });
-    if (decision.track) {
-      last = { pathname: step.pathname, url: step.url };
-      tracked.push(step.url);
-    }
+    if (decision.track) tracked.push(step.url);
+    last = locationAfter(decision, last, { pathname: step.pathname, url: step.url });
   }
   return tracked;
 }
@@ -149,4 +148,17 @@ test("readNavigationMarker validates shape and rejects tampered values", () => {
   win[NAVIGATION_MARKER_KEY] = { url: 42, type: "evil" };
   assert.equal(readNavigationMarker(win), null);
   assert.equal(readNavigationMarker(null), null);
+});
+
+test("a push back to the pre-refinement URL is a navigation, not a duplicate", () => {
+  const tracked = simulate([
+    { pathname: "/shop", url: "/shop", navigationType: "initial" },
+    // Category dropdown: router.replace refinement — not a page view…
+    { pathname: "/shop", url: "/shop?category=gaming", navigationType: "replace" },
+    // …then the "All Products" nav link pushes /shop again: a real navigation.
+    { pathname: "/shop", url: "/shop", navigationType: "push" },
+    // Strict Mode re-run of that effect is still absorbed.
+    { pathname: "/shop", url: "/shop", navigationType: "push" },
+  ]);
+  assert.deepEqual(tracked, ["/shop", "/shop"]);
 });

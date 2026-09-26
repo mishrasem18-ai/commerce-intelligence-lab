@@ -72,6 +72,21 @@ export function decidePageView(options: {
   return { track: true, reason: "navigation" };
 }
 
+/**
+ * The location rule 1 compares against after a decision: the URL now ON
+ * SCREEN. A replace-refinement is not tracked, but it does change what is on
+ * screen — so a later push back to the pre-refinement URL (e.g. /shop →
+ * category dropdown → "All Products" link to /shop) is a new navigation, not
+ * a duplicate of a page view that is no longer showing.
+ */
+export function locationAfter(
+  decision: PageViewDecision,
+  last: TrackedLocation | null,
+  next: TrackedLocation,
+): TrackedLocation | null {
+  return decision.track || decision.reason === "same-page-state-refinement" ? next : last;
+}
+
 /** Read (without consuming) the router marker stamped by instrumentation-client. */
 export function readNavigationMarker(
   win: object | null = typeof window === "undefined" ? null : window,
