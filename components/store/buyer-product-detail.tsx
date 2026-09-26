@@ -61,7 +61,10 @@ export function BuyerProductDetail({
     analytics.track("commerce.view_item", { commerce: productCommerce(product) });
   }, [product, viewable]);
 
-  if (!product || (hydrated && !isPurchasable(product))) {
+  // Purchasability is decided from the same data on the server and the
+  // client (it used to wait for hydration, so a draft/archived product first
+  // rendered the full page and then collapsed — shifting the footer, CLS 0.34).
+  if (!product || !viewable) {
     if (!product && !hydrated) {
       return (
         <div className="flex min-h-[50vh] items-center justify-center text-sm text-muted-foreground">
