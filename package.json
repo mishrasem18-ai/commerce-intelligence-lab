@@ -6,8 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && wrangler deploy",
+    "preview": "opennextjs-cloudflare build && node scripts/check-worker-bundle.mjs && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && node scripts/check-worker-bundle.mjs && wrangler deploy",
     "lint": "eslint",
     "test:ai": "node --experimental-strip-types --test lib/ai/*.test.ts",
     "test:catalog": "node --experimental-strip-types --import ./test/register.mjs --test lib/data/*.test.ts lib/catalog/*.test.ts",
@@ -17,7 +17,10 @@
     "test": "node --experimental-strip-types --import ./test/register.mjs --test lib/ai/*.test.ts lib/data/*.test.ts lib/catalog/*.test.ts lib/auth/*.test.ts lib/db/*.test.ts lib/analytics/*.test.ts lib/routes/*.test.ts lib/analytics/adapters/*.test.ts",
     "test:integration": "node --test test/integration/*.test.mjs",
     "typecheck": "tsc --noEmit",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "check:worker": "node scripts/check-worker-bundle.mjs",
+    "images:build": "node scripts/build-product-images.mjs",
+    "images:fetch": "node scripts/images/fetch-sources.mjs"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.2",

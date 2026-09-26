@@ -1,0 +1,9 @@
+# Cloudflare Workers Static Assets headers (OpenNext copies public/ into the
+# assets directory; this file is parsed by Cloudflare, never served).
+#
+# Product images are content-hashed by scripts/build-product-images.mjs
+# (<key>.<hash>-<width>.<avif|webp>): a changed image gets a new URL, so the
+# old one can be cached forever.
+/products/*
+  Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
