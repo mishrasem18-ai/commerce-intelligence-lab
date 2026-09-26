@@ -208,6 +208,17 @@ test.describe("client navigation: the NEW page's title, one page.view each", () 
   });
 });
 
+test("page.view precedes view_item on a hard load of a PDP", async ({ page }) => {
+  await page.goto("/shop");
+  const href = await page.locator('main a[href^="/product/"]').first().getAttribute("href");
+  // A fresh document: the page and the tracker hydrate together.
+  await page.goto(href!);
+  await expectPageViews(page, 1);
+  await expect.poll(async () => (await canonicalEvents(page, "commerce.view_item")).length).toBe(1);
+  const order = (await canonicalEvents(page)).map((e) => e.event_name);
+  expect(order.indexOf("page.view")).toBeLessThan(order.indexOf("commerce.view_item"));
+});
+
 test("page.view precedes the new page's own events (view_item, view_item_list)", async ({ page }) => {
   await page.goto("/shop");
   await expectPageViews(page, 1);

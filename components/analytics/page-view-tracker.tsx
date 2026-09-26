@@ -43,8 +43,8 @@ import {
  * PDP's title registration is a layout effect in a CHILD, so it still lands
  * before this one.
  *
- * Must be rendered inside <Suspense> (useSearchParams requirement for
- * statically rendered routes).
+ * Rendered WITHOUT a Suspense boundary (see RootAnalytics) so it hydrates in
+ * the same pass as the page on a hard load, too.
  */
 
 let lastTracked: TrackedLocation | null = null;
