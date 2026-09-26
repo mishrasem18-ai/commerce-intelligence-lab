@@ -1,4 +1,4 @@
-import { test, expect, expectPageViews, pageViews, signInAdmin, signUpBuyer } from "./fixtures";
+import { test, expect, canonicalEvents, expectPageViews, pageViews, signInAdmin, signUpBuyer } from "./fixtures";
 
 /**
  * page.title IS the pageName downstream (GA4 page_title). Every route's
@@ -205,6 +205,24 @@ test.describe("client navigation: the NEW page's title, one page.view each", () 
     await expect(page).toHaveURL(/q=lamp/);
     await expectPageViews(page, 1);
   });
+});
+
+test("page.view precedes the new page's own events (view_item, view_item_list)", async ({ page }) => {
+  await page.goto("/shop");
+  await expectPageViews(page, 1);
+  await page.locator('main a[href^="/product/"]').first().click();
+  await expect(page).toHaveURL(/\/product\//);
+  await expectPageViews(page, 2);
+  const names = (await canonicalEvents(page)).map((e) => `${e.event_name} ${e.page.path}`);
+  const pdpView = names.findIndex((n) => n.startsWith("page.view /product/"));
+  const viewItem = names.findIndex((n) => n.startsWith("commerce.view_item /product/"));
+  expect(viewItem).toBeGreaterThan(pdpView);
+
+  await page.goto("/shop?category=home");
+  await expectPageViews(page, 1);
+  await expect.poll(async () => (await canonicalEvents(page, "commerce.view_item_list")).length).toBe(1);
+  const order = (await canonicalEvents(page)).map((e) => e.event_name);
+  expect(order.indexOf("page.view")).toBeLessThan(order.indexOf("commerce.view_item_list"));
 });
 
 test("a hand-typed email in the URL never reaches page.path", async ({ page, context, baseURL }) => {

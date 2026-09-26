@@ -63,8 +63,8 @@ export default async function RootLayout({
             initialCustomers={initialCustomers}
           >
             {children}
-            {/* After the page: its title registration (a layout effect) always
-                lands before the tracker's passive effect in the same commit. */}
+            {/* After the page, so React runs the page's layout effects (its title
+                registration) before the tracker's in the same commit. */}
             <RootAnalytics />
           </Providers>
         </ThemeProvider>

@@ -36,6 +36,12 @@ import {
  * tracker waits for that registration: the registry version is a dependency,
  * so the effect re-runs when it arrives. Event-driven, no timers.
  *
+ * It runs as a LAYOUT effect so page.view precedes every page-level event
+ * the new page emits from its own (passive) effects — view_item,
+ * view_item_list, view_cart… — matching GA4's "page_view first" model. The
+ * PDP's title registration is a layout effect in a CHILD, so it still lands
+ * before this one.
+ *
  * Must be rendered inside <Suspense> (useSearchParams requirement for
  * statically rendered routes).
  */
@@ -52,7 +58,7 @@ export function PageViewTracker() {
     () => 0,
   );
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     const url = queryString ? `${pathname}?${queryString}` : pathname;
     const marker = readNavigationMarker();
     const navigationType =
