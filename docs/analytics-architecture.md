@@ -50,7 +50,9 @@ Because this is a training lab, the canonical layer is inspectable from the
 browser console: typing `window.analyticsData` returns a **read-only,
 deep-frozen snapshot** (`lib/analytics/inspector.ts`) containing the recent
 scrubbed `AnalyticsData` envelopes, the neutral consent state, the non-PII
-user context and destination metadata. It is a getter that builds a fresh
+user context, destination metadata, and shortcuts to the current `page`
+(last page.view's page context) and `last_search` (last search.submit's
+search context). It is a getter that builds a fresh
 copy on every access — assignments are rejected and the returned object is
 immutable, so DevTools users can inspect but never mutate canonical state.
 It is NOT `window.dataLayer` and never aliases it; the two can be compared
@@ -150,6 +152,45 @@ passwords, tokens, cookies, hashes, raw D1 records). Enforcement is layered:
    adapter rebuilds `page_location` from the scrubbed path + query, so the
    raw `document.location` never needs to reach GA4.
 5. **Titles carry no PII by construction** — see *Page titles* below.
+
+## Site search
+
+`search.submit` carries a `SearchContext`:
+
+```jsonc
+"search": { "query": "desk",            // normalised: NFKC, trimmed, collapsed, lower-case
+            "results_count": 7,         // what the results page lists for this term
+            "search_source": "header",  // "header" | "shop" | "suggestion" | "url"
+            "zero_results": false }
+```
+
+One event per **deliberate** search, with the rules owned by
+`createSearchTracker` (unit-tested in `lib/analytics/search.test.ts`):
+
+- **Header** — Enter, the mobile keyboard's Search/Go key (both are an
+  implicit `<form role="search">` submit) or "See all results". Fires
+  *before* navigating to `/shop?q=`.
+- **Suggestion** — choosing a product in the header dropdown is its own
+  signal (`search_source: "suggestion"`), never an additional plain submit.
+- **Shop box** — Enter / the mobile Search key only. The grid still filters
+  live while typing (URL `?q=` replace-refinements), but keystrokes are page
+  state. Enter rather than blur is the commit, because blur also fires when a
+  half-typed term is abandoned by clicking elsewhere — the partial-term noise
+  the old 500 ms debounce produced.
+- **URL** — only when the shop is the document's *entry* URL (Navigation
+  Timing), once per document: a deep link, shared link or refresh. The header
+  reaches `/shop?q=` by client-side push, never as a document load, so it can
+  never double-fire; back/forward to a `?q=` page is history, not a search.
+- **Dedupe** — an identical consecutive submission (same source, term and
+  result count, e.g. Enter pressed twice) is ignored.
+- **PII** — an email- or phone-like term becomes `"[redacted]"` in the PII
+  guard, before any adapter; the same term in the URL is redacted in
+  `page.query_string` / `page_location`.
+
+The GTM adapter maps it to GA4 `search` with `search_term`,
+`search_results_count`, `search_source` and `search_zero_results`.
+`window.analyticsData.last_search` (and `.page` for the last page.view) make
+the current state easy to inspect in DevTools.
 
 ## Page titles — the governed pageName
 
@@ -325,7 +366,7 @@ never appear.
 | --- | --- | --- |
 | Any committed logical navigation (store, admin, 404) | `page.view` | `components/analytics/page-view-tracker.tsx`, mounted once in the **root** layout (`RootAnalytics`) — deterministic identity via `lib/analytics/navigation.ts`: identical URLs never re-track, and same-pathname `router.replace` query refinements (search keystrokes, filter/sort/pagination) count as page state, not navigations (router transition type supplied by `instrumentation-client.ts`). Title/page_type from the route table, never the DOM (see *Page titles*) |
 | Shop grid | `commerce.view_item_list` | `shop-view.tsx` (debounced, signature-deduped) |
-| Search | `search.submit` | `shop-view.tsx` (settled query + result count) |
+| Search | `search.submit` | Exactly once per deliberate search via `searchTracker` (`lib/analytics/search.ts`): header Enter / "See all results" (`header`, fires before navigating), header suggestion chosen (`suggestion`), shop box Enter / mobile Search key (`shop`), document loaded with `/shop?q=` (`url`, once per document). Never while typing. Admin global search is internal tooling and deliberately untracked |
 | Card click | `commerce.select_item` | `buyer-product-card.tsx` |
 | Product page | `commerce.view_item` | `buyer-product-detail.tsx` (per-product dedupe) |
 | Add to cart | `commerce.add_to_cart` | product card + product detail (incl. Buy Now) |

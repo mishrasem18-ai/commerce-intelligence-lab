@@ -11,7 +11,7 @@ import {
   BUYER_GRID_CLASS,
 } from "@/components/store/buyer-product-card";
 import { useProducts } from "@/lib/store/products-store";
-import { analytics } from "@/lib/analytics";
+import { analytics, searchTracker } from "@/lib/analytics";
 import { listCommerce } from "@/lib/analytics/tracking";
 import {
   ALL_CATEGORIES,
@@ -106,12 +106,11 @@ export function ShopView() {
     [products, query],
   );
 
-  // Canonical view_item_list + search.submit. Debounced because typing in the
-  // search box rewrites the URL per keystroke; only the settled state counts.
-  // Refs dedupe repeats (and Strict Mode double effects); a remount after
+  // Canonical view_item_list. Debounced because typing in the search box
+  // rewrites the URL per keystroke; only the settled list counts. The ref
+  // dedupes repeats (and Strict Mode double effects); a remount after
   // navigating away and back deliberately counts as a fresh list view.
   const lastListKey = React.useRef<string | null>(null);
-  const lastSearchTerm = React.useRef<string | null>(null);
   React.useEffect(() => {
     const listKey = [query.category, query.price, query.sort, query.page, query.q].join("|");
     const timer = window.setTimeout(() => {
@@ -121,23 +120,37 @@ export function ShopView() {
           commerce: listCommerce(items, categorySelectionLabel(query.category)),
         });
       }
-      const term = query.q.trim();
-      if (term && term !== lastSearchTerm.current) {
-        lastSearchTerm.current = term;
-        analytics.track("search.submit", {
-          search: { query: term, results_count: total },
-        });
-      }
     }, 500);
     return () => window.clearTimeout(timer);
-  }, [query, items, total]);
+  }, [query, items]);
+
+  // search.submit for a document LOADED with ?q= (deep link / refresh):
+  // search_source "url", once per document. Client-side arrivals (the header
+  // search, back/forward) never qualify — see lib/analytics/search.ts.
+  const currentUrl = `${pathname}?${searchParams.toString()}`;
+  React.useEffect(() => {
+    searchTracker.landed(currentUrl, query.q, total);
+  }, [currentUrl, query.q, total]);
+
+  // The shop box's deliberate search: Enter or the mobile "Search" key. The
+  // grid already filters live while typing; keystrokes are never searches.
+  const submitSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const results = selectShopPage(products, { ...query, q: queryDraft, page: 1 }).total;
+    searchTracker.submit(queryDraft, results, "shop");
+    if (queryDraft !== query.q) updateQuery({ q: queryDraft });
+    // Dismiss the on-screen keyboard so mobile shoppers see the results.
+    event.currentTarget.querySelector("input")?.blur();
+  };
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="relative w-full lg:max-w-sm">
+        <form role="search" onSubmit={submitSearch} className="relative w-full lg:max-w-sm">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
+            type="search"
+            enterKeyHint="search"
             value={queryDraft}
             onChange={(e) => {
               setQueryDraft(e.target.value);
@@ -147,7 +160,7 @@ export function ShopView() {
             aria-label="Search products"
             className="pl-9"
           />
-        </div>
+        </form>
         <div className="flex flex-wrap items-center gap-2">
           <Select
             label="Category"

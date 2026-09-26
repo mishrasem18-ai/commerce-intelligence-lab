@@ -92,7 +92,12 @@ export function mapEventToDataLayer(
       })),
     };
   }
-  if (event.search) payload.search_term = event.search.query;
+  if (event.search) {
+    payload.search_term = event.search.query;
+    payload.search_results_count = event.search.results_count;
+    payload.search_source = event.search.search_source;
+    payload.search_zero_results = event.search.zero_results;
+  }
   return payload;
 }
 

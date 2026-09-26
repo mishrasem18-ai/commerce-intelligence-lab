@@ -21,7 +21,12 @@
  * tracking always goes through `analytics.track()`.
  */
 
-import { ANALYTICS_SCHEMA_VERSION, type AnalyticsData } from "@/lib/analytics/schema";
+import {
+  ANALYTICS_SCHEMA_VERSION,
+  type AnalyticsData,
+  type PageContext,
+  type SearchContext,
+} from "@/lib/analytics/schema";
 import type { ConsentState } from "@/lib/analytics/consent";
 import type { UserContext } from "@/lib/analytics/schema";
 import type { AnalyticsService } from "@/lib/analytics/analytics";
@@ -43,6 +48,10 @@ export interface AnalyticsDataSnapshot {
   }>;
   event_count: number;
   last_event: AnalyticsData | null;
+  /** Page context of the most recent canonical page.view. */
+  page: PageContext | null;
+  /** Search context of the most recent canonical search.submit. */
+  last_search: SearchContext | null;
   events: AnalyticsData[];
 }
 
@@ -71,6 +80,14 @@ export function buildAnalyticsDataSnapshot(
 ): AnalyticsDataSnapshot {
   const log = service.dispatcher.getLog();
   const recent = log.slice(-INSPECTOR_EVENT_LIMIT).map((record) => copy(record.event));
+  const latest = (name: AnalyticsData["event_name"]) => {
+    for (let i = log.length - 1; i >= 0; i--) {
+      if (log[i].event.event_name === name) return log[i].event;
+    }
+    return null;
+  };
+  const lastPageView = latest("page.view");
+  const lastSearch = latest("search.submit");
   return deepFreeze({
     contract: "analyticsData" as const,
     description:
@@ -89,6 +106,8 @@ export function buildAnalyticsDataSnapshot(
     })),
     event_count: log.length,
     last_event: recent.length > 0 ? recent[recent.length - 1] : null,
+    page: lastPageView ? copy(lastPageView.page) : null,
+    last_search: lastSearch?.search ? copy(lastSearch.search) : null,
     events: recent,
   });
 }

@@ -9,15 +9,14 @@ import { CartButton } from "@/components/store/cart-button";
 import { AccountMenu } from "@/components/store/account-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { CategoryNav } from "@/components/store/category-nav";
+import { useMounted } from "@/lib/use-mounted";
 
 const MOBILE_DRAWER_ID = "store-mobile-drawer";
 
 export function StoreHeader() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
-  const [mounted, setMounted] = React.useState(false);
-
   // Portals need document; only render the drawer after mount.
-  React.useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
 
   // While the drawer is open: lock background scroll and close on Escape.
   React.useEffect(() => {

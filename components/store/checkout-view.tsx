@@ -49,7 +49,7 @@ export function CheckoutView() {
   const { lines, totals } = useCartDetails();
 
   const customer = buyer ? getCustomer(buyer.customerId) : undefined;
-  const savedAddresses = customer?.addresses ?? [];
+  const savedAddresses = React.useMemo(() => customer?.addresses ?? [], [customer]);
 
   const [contactEmail, setContactEmail] = React.useState("");
   const [contactMobile, setContactMobile] = React.useState("");

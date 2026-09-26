@@ -164,3 +164,23 @@ test("snapshot inherits PII scrubbing from the canonical boundary", () => {
   assert.ok(!serialized.includes("leak@example.com"));
   assert.ok(serialized.includes("[redacted]"));
 });
+
+test("snapshot exposes the current page and the last search (scrubbed)", () => {
+  const service = makeService();
+  assert.equal(buildAnalyticsDataSnapshot(service).page, null);
+  assert.equal(buildAnalyticsDataSnapshot(service).last_search, null);
+  service.track("page.view");
+  service.track("search.submit", {
+    search: { query: "jane@example.com", results_count: 0, search_source: "header", zero_results: true },
+  });
+  service.track("commerce.add_to_cart", { commerce: COMMERCE });
+  const snapshot = buildAnalyticsDataSnapshot(service);
+  assert.equal(snapshot.page?.title, "Shop");
+  assert.deepEqual(snapshot.last_search, {
+    query: "[redacted]",
+    results_count: 0,
+    search_source: "header",
+    zero_results: true,
+  });
+  assert.ok(Object.isFrozen(snapshot.last_search));
+});

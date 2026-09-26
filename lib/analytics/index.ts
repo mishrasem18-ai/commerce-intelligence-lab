@@ -21,6 +21,7 @@ import { createGtmAdapter } from "@/lib/analytics/adapters/gtm-adapter";
 import { createContentsquareAdapter } from "@/lib/analytics/adapters/contentsquare-adapter";
 import { createAmtaAdapter } from "@/lib/analytics/adapters/amta-adapter";
 import { installAnalyticsDataInspector } from "@/lib/analytics/inspector";
+import { createSearchTracker, documentEntryUrl } from "@/lib/analytics/search";
 
 export const analytics: AnalyticsService = createAnalytics({
   adapters: [createGtmAdapter(), createContentsquareAdapter(), createAmtaAdapter()],
@@ -32,6 +33,17 @@ export const analytics: AnalyticsService = createAnalytics({
       );
     }
   },
+});
+
+/**
+ * Site search: call `searchTracker.submit(term, resultsCount, source)` on a
+ * deliberate search and `searchTracker.landed(url, term, count)` when the
+ * shop renders a ?q= URL. The tracker owns every dedupe rule, so exactly one
+ * canonical search.submit is produced per deliberate search.
+ */
+export const searchTracker = createSearchTracker({
+  track: (search) => analytics.track("search.submit", { search }),
+  entryUrl: documentEntryUrl,
 });
 
 // Educational-lab inspector: `window.analyticsData` in DevTools returns a
@@ -46,6 +58,8 @@ export type {
   CommerceContext,
   CommerceItem,
   PageType,
+  SearchContext,
+  SearchSource,
 } from "@/lib/analytics/schema";
 export type { ConsentCategory, ConsentRecord, ConsentState } from "@/lib/analytics/consent";
 export type { DispatchRecord } from "@/lib/analytics/dispatcher";

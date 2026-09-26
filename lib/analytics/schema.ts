@@ -136,9 +136,15 @@ export interface CommerceContext {
   checkout_step?: "begin" | "shipping" | "payment";
 }
 
+/** Where a deliberate search came from (see lib/analytics/search.ts). */
+export type SearchSource = "header" | "shop" | "suggestion" | "url";
+
 export interface SearchContext {
+  /** Normalised term (trimmed, collapsed, lower-case); "[redacted]" if PII. */
   query: string;
-  results_count?: number;
+  results_count: number;
+  search_source: SearchSource;
+  zero_results: boolean;
 }
 
 export interface ConsentChangeContext {
