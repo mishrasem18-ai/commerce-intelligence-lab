@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { routeMetadata } from "@/lib/routes/page-titles";
 import { PageHeader } from "@/components/layout/page-header";
 import {
   Card,
@@ -9,7 +10,7 @@ import {
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { NotificationsList } from "@/components/dashboard/notifications-list";
 
-export const metadata: Metadata = { title: "Activity" };
+export const metadata: Metadata = routeMetadata("admin_activity");
 
 export default function ActivityPage() {
   return (

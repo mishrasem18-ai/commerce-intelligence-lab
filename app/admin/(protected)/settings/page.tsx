@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { routeMetadata } from "@/lib/routes/page-titles";
 import { PageHeader } from "@/components/layout/page-header";
 import { SettingsView, type SettingsTabId } from "@/components/settings/settings-view";
 
-export const metadata: Metadata = { title: "Settings" };
+export const metadata: Metadata = routeMetadata("admin_settings");
 
 const VALID_TABS: SettingsTabId[] = [
   "profile",

@@ -13,9 +13,11 @@
     "test:catalog": "node --experimental-strip-types --import ./test/register.mjs --test lib/data/*.test.ts lib/catalog/*.test.ts",
     "test:auth": "node --experimental-strip-types --test lib/auth/*.test.ts",
     "test:buyer": "node --experimental-strip-types --import ./test/register.mjs --test lib/db/*.test.ts",
-    "test:analytics": "node --experimental-strip-types --import ./test/register.mjs --test lib/analytics/*.test.ts lib/analytics/adapters/*.test.ts",
-    "test": "node --experimental-strip-types --import ./test/register.mjs --test lib/ai/*.test.ts lib/data/*.test.ts lib/catalog/*.test.ts lib/auth/*.test.ts lib/db/*.test.ts lib/analytics/*.test.ts lib/analytics/adapters/*.test.ts",
-    "test:integration": "node --test test/integration/*.test.mjs"
+    "test:analytics": "node --experimental-strip-types --import ./test/register.mjs --test lib/analytics/*.test.ts lib/routes/*.test.ts lib/analytics/adapters/*.test.ts",
+    "test": "node --experimental-strip-types --import ./test/register.mjs --test lib/ai/*.test.ts lib/data/*.test.ts lib/catalog/*.test.ts lib/auth/*.test.ts lib/db/*.test.ts lib/analytics/*.test.ts lib/routes/*.test.ts lib/analytics/adapters/*.test.ts",
+    "test:integration": "node --test test/integration/*.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.2",
@@ -31,12 +33,14 @@
     "wrangler": "^4.113.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.11",
+    "sharp": "^0.35.4",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

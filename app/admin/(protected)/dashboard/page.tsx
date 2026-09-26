@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout/page-header";
 import { buttonVariants } from "@/components/ui/button";
@@ -23,6 +24,9 @@ import { TopProductsList } from "@/components/dashboard/top-products-list";
 // product set (with stock/trend fields), which is not a migrated commerce
 // entity — see Phase C notes. The live catalog lives in D1 via the stores.
 import { products } from "@/lib/data";
+import { routeMetadata } from "@/lib/routes/page-titles";
+
+export const metadata: Metadata = routeMetadata("admin_dashboard");
 
 export default function DashboardPage() {
   return (

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { routeMetadata } from "@/lib/routes/page-titles";
 import { CustomerDetailView } from "@/components/customers/customer-detail-view";
 import { getCustomerById } from "@/lib/db/customers";
 
@@ -6,15 +7,8 @@ import { getCustomerById } from "@/lib/db/customers";
 // resolve via the store when not present in D1.
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}): Promise<Metadata> {
-  const { id } = await params;
-  const customer = await getCustomerById(id);
-  return { title: customer ? customer.name : "Customer" };
-}
+// Fixed per-template title (no ids, no names): see lib/routes/page-titles.ts.
+export const metadata: Metadata = routeMetadata("admin_customer_detail");
 
 export default async function CustomerDetailPage({
   params,

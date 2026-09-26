@@ -1,10 +1,11 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { routeMetadata } from "@/lib/routes/page-titles";
 import { ShopView } from "@/components/store/shop-view";
 import { categorySelectionLabel } from "@/lib/catalog/categories";
 import { parseShopQuery } from "@/lib/catalog/shop-query";
 
-export const metadata: Metadata = { title: { absolute: "Shop · Aurora Market" } };
+export const metadata: Metadata = routeMetadata("shop");
 
 /**
  * The shop's state lives entirely in the URL. This server component and the

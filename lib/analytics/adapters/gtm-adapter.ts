@@ -50,14 +50,24 @@ export const GA4_EVENT_NAME_MAP: Partial<Record<AnalyticsEventName, string>> = {
 /**
  * Pure mapping from a canonical envelope to the object pushed into
  * `window.dataLayer`. Exported for tests and documentation.
+ *
+ * `page_location` is rebuilt from the PII-scrubbed canonical path + query
+ * string. GA4 tags must read it from the dataLayer (see
+ * docs/ga4-gtm-changes.md) instead of the Google tag's default
+ * `document.location.href`, which would carry an email typed into the URL.
  */
-export function mapEventToDataLayer(event: AnalyticsData): Record<string, unknown> {
+export function mapEventToDataLayer(
+  event: AnalyticsData,
+  options: { origin?: string } = {},
+): Record<string, unknown> {
+  const query = event.page.query_string ? `?${event.page.query_string}` : "";
   const payload: Record<string, unknown> = {
     event: GA4_EVENT_NAME_MAP[event.event_name] ?? event.event_name,
     event_id: event.event_id,
     page_type: event.page.page_type,
     page_path: event.page.path,
     page_title: event.page.title,
+    ...(options.origin ? { page_location: `${options.origin}${event.page.path}${query}` } : {}),
   };
   if (event.user.customer_id) payload.customer_id = event.user.customer_id;
   if (event.commerce) {
@@ -127,6 +137,7 @@ export function isValidContainerId(id: string | undefined): id is string {
 /** The minimal window surface the adapter touches — injectable for tests. */
 export interface GtmWindow {
   dataLayer?: unknown[];
+  location?: { origin: string };
 }
 
 export interface GtmAdapterOptions {
@@ -201,7 +212,7 @@ export function createGtmAdapter(options: GtmAdapterOptions = {}): AnalyticsAdap
       // GA4 guidance: clear the previous ecommerce object so stale items
       // can't merge into the next event.
       if (event.commerce) dl.push({ ecommerce: null });
-      dl.push(mapEventToDataLayer(event));
+      dl.push(mapEventToDataLayer(event, { origin: win?.location?.origin }));
     },
 
     describe(event) {

@@ -15,7 +15,6 @@
 
 import {
   ANALYTICS_SCHEMA_VERSION,
-  pageTypeFromPath,
   type AnalyticsData,
   type AnalyticsEventName,
   type AppContext,
@@ -30,6 +29,7 @@ import {
   type ConsentStore,
 } from "@/lib/analytics/consent";
 import { scrubPii } from "@/lib/analytics/pii";
+import { resolvePageContext } from "@/lib/analytics/page-context";
 import {
   createDispatcher,
   type Dispatcher,
@@ -74,13 +74,14 @@ function defaultPageContext(): PageContext {
   if (typeof window === "undefined" || typeof document === "undefined") {
     return { path: "", title: "", page_type: "other", query_string: "" };
   }
-  const path = window.location.pathname;
-  return {
-    path,
-    title: document.title,
-    page_type: pageTypeFromPath(path),
-    query_string: window.location.search.replace(/^\?/, ""),
-  };
+  const page = resolvePageContext(
+    window.location.pathname,
+    window.location.search.replace(/^\?/, ""),
+  );
+  // Title comes from the shared route table (never the racy DOM). Only an
+  // entity page that has not registered its title yet falls back to the DOM
+  // — page.view itself never does (the tracker waits instead).
+  return { ...page, title: page.title ?? document.title };
 }
 
 function defaultEnvironment(): AppContext["environment"] {

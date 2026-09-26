@@ -1,7 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Compass, Home } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { NOT_FOUND_TITLE } from "@/lib/routes/page-titles";
+
+export const metadata: Metadata = { title: { absolute: NOT_FOUND_TITLE } };
 
 export default function NotFound() {
   return (

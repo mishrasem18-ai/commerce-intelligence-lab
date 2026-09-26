@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { routeMetadata } from "@/lib/routes/page-titles";
 import { HomeView } from "@/components/store/home-view";
 
 export const metadata: Metadata = {
-  title: { absolute: "Aurora Market — Tech, Style & Essentials" },
+  ...routeMetadata("home"),
   description:
     "Shop premium electronics, fashion, home and more at Aurora Market — a modern demo storefront.",
 };

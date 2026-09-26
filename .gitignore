@@ -45,3 +45,13 @@ next-env.d.ts
 # Cloudflare / OpenNext
 .open-next/
 .wrangler/
+
+# Product image sourcing: originals are re-downloadable from data/product-images.json
+/assets/product-source/
+# Dev-only Python venv for optional background normalisation (rembg)
+/.venv-images/
+
+# Playwright
+/test-results/
+/playwright-report/
+/e2e/.auth/

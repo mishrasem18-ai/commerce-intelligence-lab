@@ -20,7 +20,8 @@ test("pageTypeFromPath covers every storefront journey", () => {
   assert.equal(pageTypeFromPath("/login"), "auth_login");
   assert.equal(pageTypeFromPath("/signup"), "auth_signup");
   assert.equal(pageTypeFromPath("/account/orders"), "account");
-  assert.equal(pageTypeFromPath("/admin/dashboard"), "other");
+  assert.equal(pageTypeFromPath("/admin/dashboard"), "admin_dashboard");
+  assert.equal(pageTypeFromPath("/no-such-page"), "not_found");
 });
 
 test("canonical event names follow the namespace.verb convention", () => {

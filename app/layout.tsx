@@ -6,6 +6,8 @@ import { Providers } from "@/components/providers";
 import { getProducts } from "@/lib/db/products";
 import { getOrders } from "@/lib/db/orders";
 import { getCustomers } from "@/lib/db/customers";
+import { RootAnalytics } from "@/components/analytics/root-analytics";
+import { STORE_SITE_NAME } from "@/lib/routes/page-titles";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,10 +20,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: "Commerce Intelligence Lab",
-    template: "%s · Commerce Intelligence Lab",
-  },
+  // Every page sets an absolute title from lib/routes/page-titles.ts.
+  title: { default: STORE_SITE_NAME, template: `%s · ${STORE_SITE_NAME}` },
   description:
     "Enterprise commerce analytics — revenue, orders, customers and AI insights in one workspace.",
 };
@@ -63,6 +63,9 @@ export default async function RootLayout({
             initialCustomers={initialCustomers}
           >
             {children}
+            {/* After the page: its title registration (a layout effect) always
+                lands before the tracker's passive effect in the same commit. */}
+            <RootAnalytics />
           </Providers>
         </ThemeProvider>
       </body>

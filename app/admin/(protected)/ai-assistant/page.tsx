@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import { routeMetadata } from "@/lib/routes/page-titles";
 import { Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { AiAssistant } from "@/components/ai/ai-assistant";
 
-export const metadata: Metadata = { title: "AI Assistant" };
+export const metadata: Metadata = routeMetadata("admin_ai_assistant");
 
 export default function AiAssistantPage() {
   return (

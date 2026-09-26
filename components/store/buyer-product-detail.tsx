@@ -19,6 +19,8 @@ import { BuyerProductCard } from "@/components/store/buyer-product-card";
 import { CATEGORY_ICON } from "@/components/products/category-visuals";
 import { useCart } from "@/lib/store/cart-store";
 import { useProducts } from "@/lib/store/products-store";
+import { useRegisterPageTitle } from "@/lib/hooks/use-register-page-title";
+import { productPageTitle } from "@/lib/routes/page-titles";
 import { useToast } from "@/components/ui/toast";
 import { analytics } from "@/lib/analytics";
 import { productCommerce } from "@/lib/analytics/tracking";
@@ -41,6 +43,14 @@ export function BuyerProductDetail({
 
   const product = getProduct(id) ?? initialProduct ?? null;
   const viewable = !!product && isPurchasable(product);
+
+  // The tracked page.title (see useRegisterPageTitle). Mirrors what this
+  // component renders: the product name when purchasable, otherwise
+  // "Product Not Found" — but only once a missing product is final (a
+  // runtime-created product may still appear when the store hydrates).
+  useRegisterPageTitle(
+    viewable ? productPageTitle(product.name) : !product && !hydrated ? null : productPageTitle(null),
+  );
 
   // Canonical view_item — once per product id, not per re-render (the ref
   // also absorbs Strict Mode's double effect run).

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { routeMetadata } from "@/lib/routes/page-titles";
 import { Receipt, RotateCcw, ShoppingCart, Wallet } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { StatCard } from "@/components/cards/stat-card";
@@ -8,7 +9,7 @@ import { OrdersHeaderActions } from "@/components/orders/orders-header-actions";
 import { getOrders } from "@/lib/db/orders";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Orders" };
+export const metadata: Metadata = routeMetadata("admin_orders");
 export const dynamic = "force-dynamic";
 
 export default async function OrdersPage() {

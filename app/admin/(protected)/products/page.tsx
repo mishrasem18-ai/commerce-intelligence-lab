@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import { routeMetadata } from "@/lib/routes/page-titles";
 import { PageHeader } from "@/components/layout/page-header";
 import { ProductStats } from "@/components/products/product-stats";
 import { ProductsExplorer } from "@/components/products/products-explorer";
 import { ProductsHeaderActions } from "@/components/products/products-header-actions";
 
-export const metadata: Metadata = { title: "Products" };
+export const metadata: Metadata = routeMetadata("admin_products");
 
 export default function ProductsPage() {
   return (

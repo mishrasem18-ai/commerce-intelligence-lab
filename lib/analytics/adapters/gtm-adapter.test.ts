@@ -280,3 +280,41 @@ test("no PII reaches the dataLayer through the full pipeline", () => {
   assert.ok(!serialized.includes("leak@example.com"));
   assert.ok(serialized.includes("C-AB12CD"), "pseudonymous id is allowed");
 });
+
+test("page_location is rebuilt from the scrubbed path + query, never the raw URL", () => {
+  const win: GtmWindow = { location: { origin: "https://aurora.example" } };
+  const adapter = createGtmAdapter({ containerId: FAKE_ID, win, injectScript: () => {} });
+  const service = createAnalytics({
+    adapters: [adapter],
+    consentStore: createConsentStore(null),
+    environment: "test",
+    getPageContext: () => ({
+      path: "/account/orders/jane%40example.com",
+      title: "Order Detail · Aurora Market",
+      page_type: "account",
+      query_string: "q=jane%40example.com&page=2",
+    }),
+  });
+  service.updateConsent("accept_all");
+  service.track("page.view");
+  const pageView = (win.dataLayer ?? []).find(
+    (e) => (e as Record<string, unknown>).event === "page_view",
+  ) as Record<string, unknown>;
+  assert.equal(pageView.page_path, "/account/orders/[redacted]");
+  assert.equal(
+    pageView.page_location,
+    "https://aurora.example/account/orders/[redacted]?q=[redacted]&page=2",
+  );
+  assert.equal(pageView.page_title, "Order Detail · Aurora Market");
+  assert.ok(!JSON.stringify(win.dataLayer).includes("jane"));
+});
+
+test("page_location is omitted when no origin is known (pure mapping)", () => {
+  const mapped = mapEventToDataLayer(makeEvent());
+  assert.equal("page_location" in mapped, false);
+  const withOrigin = mapEventToDataLayer(
+    makeEvent({ page: { path: "/shop", title: "Shop · Aurora Market", page_type: "product_list", query_string: "category=home" } }),
+    { origin: "https://aurora.example" },
+  );
+  assert.equal(withOrigin.page_location, "https://aurora.example/shop?category=home");
+});

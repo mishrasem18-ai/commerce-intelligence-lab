@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { routeMetadata } from "@/lib/routes/page-titles";
 import { Eye, MousePointerClick, Percent, Timer } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,7 @@ import { CountryRevenueChart } from "@/components/charts/country-revenue-chart";
 import { ConversionFunnelChart } from "@/components/charts/conversion-funnel-chart";
 import { DeviceMixChart } from "@/components/charts/device-mix-chart";
 
-export const metadata: Metadata = { title: "Analytics" };
+export const metadata: Metadata = routeMetadata("admin_analytics");
 
 export default function AnalyticsPage() {
   return (

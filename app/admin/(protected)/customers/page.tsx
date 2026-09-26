@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { routeMetadata } from "@/lib/routes/page-titles";
 import { Crown, Repeat, UserPlus, Users } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { CustomersView } from "@/components/tables/customers-view";
 import { getCustomers } from "@/lib/db/customers";
 import { formatNumber, formatPercent } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Customers" };
+export const metadata: Metadata = routeMetadata("admin_customers");
 export const dynamic = "force-dynamic";
 
 export default async function CustomersPage() {

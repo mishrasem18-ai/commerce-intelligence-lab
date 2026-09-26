@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { routeMetadata } from "@/lib/routes/page-titles";
 import { PageHeader } from "@/components/layout/page-header";
 import { ReportsView } from "@/components/reports/reports-view";
 
-export const metadata: Metadata = { title: "Reports" };
+export const metadata: Metadata = routeMetadata("admin_reports");
 
 export default function ReportsPage() {
   return (

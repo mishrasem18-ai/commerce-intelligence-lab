@@ -26,6 +26,7 @@
  */
 
 import type { ConsentState, ConsentDecisionMethod } from "@/lib/analytics/consent";
+import { resolvePageMeta } from "@/lib/routes/page-titles";
 
 export type { ConsentState, ConsentDecisionMethod };
 
@@ -48,11 +49,34 @@ export type PageType =
   | "auth_login"
   | "auth_signup"
   | "account"
+  | "content"
+  | "not_found"
+  | "admin_login"
+  | "admin_dashboard"
+  | "admin_product_list"
+  | "admin_product_detail"
+  | "admin_order_list"
+  | "admin_order_detail"
+  | "admin_customer_list"
+  | "admin_customer_detail"
+  | "admin_analytics"
+  | "admin_reports"
+  | "admin_activity"
+  | "admin_ai_assistant"
+  | "admin_settings"
+  /** Server-side / pre-hydration placeholder only; never a real route. */
   | "other";
 
 export interface PageContext {
-  /** Pathname only — never includes user-entered fragments beyond the URL. */
+  /**
+   * Pathname only. User-controlled segments that look like an email or phone
+   * number are replaced with "[redacted]" by the PII guard.
+   */
   path: string;
+  /**
+   * The approved page title from lib/routes/page-titles.ts — the governed
+   * pageName downstream. Never read from the DOM.
+   */
   title: string;
   page_type: PageType;
   /** Query string without the leading `?`, empty when none. */
@@ -205,16 +229,11 @@ export interface AnalyticsData<
 /*  Page-type derivation                                                      */
 /* -------------------------------------------------------------------------- */
 
-/** Derive the canonical page type from an App Router pathname. */
+/**
+ * Derive the canonical page type from an App Router pathname. Delegates to
+ * the shared route table so page types and titles can never drift apart;
+ * unmatched paths are the 404 page.
+ */
 export function pageTypeFromPath(pathname: string): PageType {
-  if (pathname === "/") return "home";
-  if (pathname === "/shop") return "product_list";
-  if (pathname.startsWith("/product/")) return "product_detail";
-  if (pathname === "/cart") return "cart";
-  if (pathname === "/checkout") return "checkout";
-  if (pathname.startsWith("/order-confirmation")) return "order_confirmation";
-  if (pathname === "/login") return "auth_login";
-  if (pathname === "/signup") return "auth_signup";
-  if (pathname.startsWith("/account")) return "account";
-  return "other";
+  return resolvePageMeta(pathname).page_type;
 }
