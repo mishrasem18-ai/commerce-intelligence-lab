@@ -185,16 +185,44 @@ test("every app/ page has exactly one route-table entry", () => {
   for (const pattern of table) assert.ok(patterns.includes(pattern), `stale route ${pattern}`);
 });
 
-test("pages take their titles from the route table, never hand-written", () => {
+/** Every title-bearing key in a page source: `title:` / `absolute:` / `template:`. */
+const TITLE_KEY = /\b(title|absolute|template)\s*:/g;
+const PDP_PATTERN = "/product/[id]";
+
+test("pages take their titles from their OWN route-table entry, never hand-written", () => {
   for (const file of pageFiles(APP_DIR)) {
     const pattern = patternOf(file);
     if (REDIRECT_ONLY.has(pattern)) continue;
     const source = readFileSync(file, "utf8");
-    assert.match(
-      source,
-      /routeMetadata\(|productPageTitle\(/,
-      `${pattern} must use routeMetadata()/productPageTitle()`,
-    );
-    assert.doesNotMatch(source, /title:\s*["'`]/, `${pattern} hand-writes a title`);
+    const ids = [...source.matchAll(/routeMetadata\(\s*["'`]([^"'`]+)["'`]\s*\)/g)].map((m) => m[1]);
+
+    if (pattern === PDP_PATTERN) {
+      // The only entity title: exactly one `title: { absolute: productPageTitle(...) }`.
+      assert.deepEqual(ids, [], `${pattern} must not use a static route title`);
+      const keys = [...source.matchAll(TITLE_KEY)].map((m) => m[1]);
+      assert.deepEqual(keys, ["title", "absolute"], `${pattern} title keys: ${keys}`);
+      assert.match(source, /title:\s*\{\s*absolute:\s*productPageTitle\(/, `${pattern} title`);
+      continue;
+    }
+
+    // Exactly one routeMetadata() call, naming the entry whose pattern IS this file's.
+    assert.equal(ids.length, 1, `${pattern} must call routeMetadata("<id>") exactly once`);
+    const route = ROUTES.find((r) => r.id === ids[0]);
+    assert.ok(route, `${pattern}: unknown route id "${ids[0]}"`);
+    assert.equal(route.pattern, pattern, `${pattern} uses the title of ${route.pattern}`);
+    // …and nothing else sets or overrides a title (no hand-written title/absolute/template).
+    assert.deepEqual([...source.matchAll(TITLE_KEY)], [], `${pattern} hand-writes a title`);
+    assert.doesNotMatch(source, /productPageTitle\(/, `${pattern} borrows the PDP title`);
   }
+});
+
+test("the governance scan itself rejects wrong ids and hand-written titles", () => {
+  // Negative controls for the regexes above, so a loosened pattern fails loudly.
+  const ids = (src: string) => [...src.matchAll(/routeMetadata\(\s*["'`]([^"'`]+)["'`]\s*\)/g)].map((m) => m[1]);
+  assert.deepEqual(ids(`export const metadata = routeMetadata("cart");`), ["cart"]);
+  assert.notEqual(ROUTES.find((r) => r.id === "cart")?.pattern, "/checkout");
+  const keys = (src: string) => [...src.matchAll(TITLE_KEY)];
+  assert.equal(keys(`export const metadata = { ...routeMetadata("home"), title: "Hi" };`).length, 1);
+  assert.equal(keys(`export const metadata = { title: { absolute: x } };`).length, 2);
+  assert.equal(keys(`export const metadata = routeMetadata("home");`).length, 0);
 });
