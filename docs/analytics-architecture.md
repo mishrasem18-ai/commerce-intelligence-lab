@@ -335,8 +335,10 @@ When a container ID is supplied:
 ```
 
 Every pushed event also carries the page keys `page_title`, `page_type`,
-`page_path` and `page_location` — the last rebuilt from the scrubbed
-canonical path + query string (never `document.location`). The GTM/GA4
+`page_path`, `page_location` — rebuilt from the scrubbed canonical path +
+query string (never `document.location`) — and `page_referrer`: the
+previous page view's scrubbed `page_location` in the SPA, or the scrubbed
+`document.referrer` for a document's first page view. The GTM/GA4
 configuration that consumes these keys is in `docs/ga4-gtm-changes.md`.
 
 GA4 naming lives only in `GA4_EVENT_NAME_MAP` — never in components — and

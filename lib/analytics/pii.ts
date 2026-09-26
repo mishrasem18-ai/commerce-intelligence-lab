@@ -238,6 +238,20 @@ export function redactQueryString(queryString: string): string {
     .join("&");
 }
 
+/**
+ * A full URL with its path and query redacted (fragment dropped), or null if
+ * it cannot be parsed. Used for referrers, which the browser reports raw.
+ */
+export function redactUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    const query = parsed.search.replace(/^\?/, "");
+    return `${parsed.origin}${redactPath(parsed.pathname)}${query ? `?${redactQueryString(query)}` : ""}`;
+  } catch {
+    return null;
+  }
+}
+
 /** A search term is redacted as a whole if it contains contact details. */
 export function redactSearchTerm(term: string): string {
   return containsContactDetails(term) ? PII_REDACTED : term;

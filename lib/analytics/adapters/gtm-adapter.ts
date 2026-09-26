@@ -25,6 +25,7 @@
 import type { AnalyticsAdapter } from "@/lib/analytics/adapters/types";
 import type { AnalyticsData, AnalyticsEventName } from "@/lib/analytics/schema";
 import type { ConsentState } from "@/lib/analytics/consent";
+import { redactUrl } from "@/lib/analytics/pii";
 
 /**
  * Canonical → GA4-recommended event naming. Lives HERE, not in application
@@ -52,13 +53,15 @@ export const GA4_EVENT_NAME_MAP: Partial<Record<AnalyticsEventName, string>> = {
  * `window.dataLayer`. Exported for tests and documentation.
  *
  * `page_location` is rebuilt from the PII-scrubbed canonical path + query
- * string. GA4 tags must read it from the dataLayer (see
- * docs/ga4-gtm-changes.md) instead of the Google tag's default
- * `document.location.href`, which would carry an email typed into the URL.
+ * string, and `page_referrer` (supplied by the adapter) is likewise
+ * scrubbed. GA4 tags must read both from the dataLayer (see
+ * docs/ga4-gtm-changes.md) instead of the Google tag's defaults
+ * (`document.location.href` / `document.referrer`), which would carry an
+ * email typed into the URL.
  */
 export function mapEventToDataLayer(
   event: AnalyticsData,
-  options: { origin?: string } = {},
+  options: { origin?: string; referrer?: string | null } = {},
 ): Record<string, unknown> {
   const query = event.page.query_string ? `?${event.page.query_string}` : "";
   const payload: Record<string, unknown> = {
@@ -68,6 +71,7 @@ export function mapEventToDataLayer(
     page_path: event.page.path,
     page_title: event.page.title,
     ...(options.origin ? { page_location: `${options.origin}${event.page.path}${query}` } : {}),
+    ...(options.referrer ? { page_referrer: options.referrer } : {}),
   };
   if (event.user.customer_id) payload.customer_id = event.user.customer_id;
   if (event.commerce) {
@@ -143,6 +147,7 @@ export function isValidContainerId(id: string | undefined): id is string {
 export interface GtmWindow {
   dataLayer?: unknown[];
   location?: { origin: string };
+  document?: { referrer: string };
 }
 
 export interface GtmAdapterOptions {
@@ -175,6 +180,8 @@ export function createGtmAdapter(options: GtmAdapterOptions = {}): AnalyticsAdap
   const win = options.win !== undefined ? options.win : defaultWindow();
   const injectScript = options.injectScript ?? defaultInjectScript;
   let initialized = false;
+  let lastPageLocation: string | null = null;
+  let referrer: string | null = null;
 
   const dataLayer = (): unknown[] | null => {
     if (!win) return null;
@@ -214,10 +221,23 @@ export function createGtmAdapter(options: GtmAdapterOptions = {}): AnalyticsAdap
     track(event) {
       const dl = dataLayer();
       if (!dl) return;
+      const origin = win?.location?.origin;
+      // page_referrer for a single-page app: the previous page view's
+      // (scrubbed) page_location; for the document's first page view, the
+      // browser referrer, scrubbed the same way. Every event carries the
+      // referrer of the page it happened on.
+      if (event.event_name === "page.view") {
+        referrer =
+          lastPageLocation ?? (win?.document?.referrer ? redactUrl(win.document.referrer) : null);
+      }
       // GA4 guidance: clear the previous ecommerce object so stale items
       // can't merge into the next event.
       if (event.commerce) dl.push({ ecommerce: null });
-      dl.push(mapEventToDataLayer(event, { origin: win?.location?.origin }));
+      const payload = mapEventToDataLayer(event, { origin, referrer });
+      if (event.event_name === "page.view" && typeof payload.page_location === "string") {
+        lastPageLocation = payload.page_location;
+      }
+      dl.push(payload);
     },
 
     describe(event) {

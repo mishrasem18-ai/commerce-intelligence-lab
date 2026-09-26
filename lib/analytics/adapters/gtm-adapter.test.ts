@@ -318,3 +318,51 @@ test("page_location is omitted when no origin is known (pure mapping)", () => {
   );
   assert.equal(withOrigin.page_location, "https://aurora.example/shop?category=home");
 });
+
+test("page_referrer is scrubbed: document referrer first, then the previous page_location", () => {
+  const win: GtmWindow = {
+    location: { origin: "https://aurora.example" },
+    document: { referrer: "https://aurora.example/shop?q=jane.doe%40example.com&category=home" },
+  };
+  const adapter = createGtmAdapter({ containerId: FAKE_ID, win, injectScript: () => {} });
+  let page = { path: "/product/prod-1", title: "Lamp · Aurora Market", page_type: "product_detail" as const, query_string: "" };
+  const service = createAnalytics({
+    adapters: [adapter],
+    consentStore: createConsentStore(null),
+    environment: "test",
+    getPageContext: () => page,
+  });
+  service.updateConsent("accept_all");
+  service.track("page.view");
+  service.track("commerce.view_item", { commerce: { currency: "USD", items: [] } });
+  page = { path: "/cart", title: "Cart · Aurora Market", page_type: "cart" as const, query_string: "" };
+  service.track("page.view");
+
+  const pushes = (win.dataLayer ?? []).filter(
+    (e) => typeof e === "object" && e !== null && "page_referrer" in (e as object),
+  ) as Array<Record<string, unknown>>;
+  assert.deepEqual(
+    pushes.map((p) => [p.event, p.page_referrer]),
+    [
+      ["page_view", "https://aurora.example/shop?q=[redacted]&category=home"],
+      ["view_item", "https://aurora.example/shop?q=[redacted]&category=home"],
+      ["page_view", "https://aurora.example/product/prod-1"],
+    ],
+  );
+  assert.ok(!JSON.stringify(win.dataLayer).includes("jane"));
+});
+
+test("no page_referrer is invented when the browser has none", () => {
+  const win: GtmWindow = { location: { origin: "https://aurora.example" }, document: { referrer: "" } };
+  const adapter = createGtmAdapter({ containerId: FAKE_ID, win, injectScript: () => {} });
+  const service = createAnalytics({
+    adapters: [adapter],
+    consentStore: createConsentStore(null),
+    environment: "test",
+    getPageContext: () => ({ path: "/", title: "Home · Aurora Market", page_type: "home", query_string: "" }),
+  });
+  service.updateConsent("accept_all");
+  service.track("page.view");
+  const view = (win.dataLayer ?? []).find((e) => (e as Record<string, unknown>).event === "page_view") as Record<string, unknown>;
+  assert.equal("page_referrer" in view, false);
+});
