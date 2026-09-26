@@ -11,6 +11,7 @@ import {
   type CategoryId,
   type ProductCategory,
 } from "@/lib/catalog/categories";
+import { productImageKey } from "@/lib/catalog/product-images";
 
 // Category identity lives in one place — `lib/catalog/categories.ts` — which
 // mirrors the `categories` table in D1. Re-exported here because most of the
@@ -203,14 +204,20 @@ const CATEGORY_BENEFITS: Record<ProductCategory, string[]> = {
   Toys: ["for hours of open-ended play.", "built to survive playtime.", "that sparks curiosity.", "made for creative fun."],
 };
 
+/** Product-type nouns per category (one image key per noun). */
+export const PRODUCT_TYPE_NOUNS: Readonly<Record<ProductCategory, readonly string[]>> =
+  Object.fromEntries(
+    Object.entries(BLUEPRINTS).map(([category, blueprint]) => [category, blueprint.nouns]),
+  ) as unknown as Record<ProductCategory, readonly string[]>;
+
 /* -------------------------------------------------------------------------- */
-/*  Category-appropriate imagery                                              */
+/*  Imagery                                                                   */
 /*                                                                            */
-/*  Product images are self-contained SVG data URIs themed per category (a    */
-/*  category colour + glyph + the product name). This guarantees every image  */
-/*  visually represents the correct product type, is deterministic, needs no  */
-/*  external host (safe on the Cloudflare Worker), and never 404s — unlike    */
-/*  the previous random stock-photo service which showed unrelated scenery.   */
+/*  Seeded products carry an image KEY — the slug of their product-type noun  */
+/*  — resolved to self-hosted, license-verified photos by the build-time      */
+/*  pipeline (lib/catalog/product-images.ts, data/product-images.json).       */
+/*  Products created at runtime (admin "add product") have no product type,   */
+/*  so they get a self-contained SVG placeholder themed per category.         */
 /* -------------------------------------------------------------------------- */
 
 const CATEGORY_HEX: Record<ProductCategory, string> = {
@@ -239,54 +246,6 @@ const CATEGORY_EMOJI: Record<ProductCategory, string> = {
   Toys: "🧸",
 };
 
-// Per-product-TYPE glyph so the image visually represents the actual product
-// (a keyboard shows a keyboard, headphones show headphones, a book shows a
-// book), keyed by the blueprint noun. Falls back to the category glyph.
-const NOUN_EMOJI: Record<string, string> = {
-  // Electronics
-  "Wireless Headphones": "🎧", "Smart Speaker": "🔊", "4K Webcam": "📷",
-  "Noise-Cancelling Earbuds": "🎧", "Portable SSD": "💾", "Mechanical Keyboard": "⌨️",
-  "USB-C Hub": "🔌", "Bluetooth Tracker": "📍", "Smartwatch": "⌚",
-  "Action Camera": "📹", "Power Bank": "🔋", "Wireless Charger": "⚡",
-  // Fashion
-  "Merino Sweater": "🧥", "Oxford Shirt": "👔", "Slim Chinos": "👖",
-  "Wool Overcoat": "🧥", "Linen Blazer": "🧥", "Denim Jacket": "🧥",
-  "Cashmere Scarf": "🧣", "Leather Belt": "👖", "Silk Tie": "👔", "Knit Beanie": "🧢",
-  // Home
-  "Desk Lamp": "💡", "Ceramic Vase": "🏺", "Throw Blanket": "🛏️", "Scented Candle": "🕯️",
-  "Wall Clock": "🕰️", "Area Rug": "🧶", "Picture Frame": "🖼️", "Storage Basket": "🧺",
-  "Table Runner": "🍽️", "Planter Set": "🪴",
-  // Sports
-  "Yoga Mat": "🧘", "Resistance Bands": "💪", "Dumbbell Set": "🏋️", "Running Shoes": "👟",
-  "Cycling Helmet": "⛑️", "Foam Roller": "🧻", "Water Bottle": "🥤", "Jump Rope": "🪢",
-  "Training Gloves": "🧤", "Compression Tee": "👕",
-  // Books (each title is a book)
-  "The Silent Ledger": "📕", "Atlas of Small Things": "📗", "Notes on Momentum": "📓",
-  "A Field of Signals": "📘", "The Long Quarter": "📙", "Systems & Seasons": "📚",
-  "Blueprints for Nothing": "📖", "The Analog Mind": "📔", "Ledgers & Legends": "📒",
-  "Quiet Machines": "📖",
-  // Beauty
-  "Vitamin C Serum": "🧴", "Hydrating Cleanser": "🧴", "Matte Lipstick": "💄",
-  "Facial Roller": "💆", "Night Cream": "🧴", "Sunscreen SPF 50": "🧴", "Hair Oil": "🧴",
-  "Clay Mask": "🧖", "Lip Balm Trio": "💄", "Eye Serum": "👁️",
-  // Furniture (emoji coverage for tables is limited; nearest household glyph used)
-  "Lounge Chair": "🪑", "Oak Coffee Table": "🛋️", "Bookshelf": "📚", "Bar Stool": "🪑",
-  "Bed Frame": "🛏️", "Sideboard": "🗄️", "Writing Desk": "🪑", "Ottoman": "🛋️",
-  "Nightstand": "🗄️", "Console Table": "🗄️",
-  // Accessories
-  "Leather Wallet": "👛", "Canvas Backpack": "🎒", "Sunglasses": "🕶️", "Watch Strap": "⌚",
-  "Card Holder": "💳", "Travel Pouch": "👜", "Keychain": "🔑", "Phone Case": "📱",
-  "Laptop Sleeve": "💻", "Weekender Bag": "🧳",
-  // Gaming
-  "Gaming Mouse": "🖱️", "Mechanical Keypad": "⌨️", "Headset": "🎧", "Controller": "🎮",
-  "RGB Mousepad": "🖱️", "Capture Card": "🎥", "Console Stand": "🎮", "Arcade Stick": "🕹️",
-  "Streaming Mic": "🎤", "Racing Wheel": "🏎️",
-  // Toys
-  "Wooden Blocks": "🧱", "Plush Bear": "🧸", "Building Kit": "🧱", "Puzzle Cube": "🧩",
-  "RC Car": "🚗", "Board Game": "🎲", "Art Set": "🎨", "Dollhouse": "🏠",
-  "Marble Run": "🔵", "Play Tent": "⛺",
-};
-
 function darkenHex(hex: string, factor: number): string {
   const h = hex.replace("#", "");
   const channel = (start: number) =>
@@ -305,10 +264,10 @@ function escapeXml(value: string): string {
     .replace(/'/g, "&apos;");
 }
 
-function productImage(category: ProductCategory, noun: string, name: string): string {
+function placeholderSvg(category: ProductCategory, name: string): string {
   const base = CATEGORY_HEX[category];
   const dark = darkenHex(base, 0.72);
-  const emoji = NOUN_EMOJI[noun] ?? CATEGORY_EMOJI[category];
+  const emoji = CATEGORY_EMOJI[category];
   const label = escapeXml(category);
   const title = escapeXml(name.length > 26 ? `${name.slice(0, 25)}…` : name);
   const font =
@@ -335,7 +294,7 @@ export function categoryPlaceholderImage(
   category: ProductCategory,
   name: string,
 ): string {
-  return productImage(category, "", name);
+  return placeholderSvg(category, name);
 }
 
 /** Qualifiers used to disambiguate products whose generated name would collide. */
@@ -445,7 +404,7 @@ function buildProduct(index: number, usedNames: Set<string>): Product {
     inventory,
     status,
     rating,
-    image: productImage(category, noun, name),
+    image: productImageKey(noun),
     unitsSold,
     revenue,
     createdAt: new Date(createdMs).toISOString(),

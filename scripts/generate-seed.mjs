@@ -4,13 +4,21 @@
  * Reads the existing static demo data (lib/data/products.ts + lib/data.ts) — the
  * same arrays the app seeds today — and emits migrations/0002_seed.sql so D1 is
  * populated with identical ids / skus / relationships. This keeps a single
- * source of truth: regenerate with `node --experimental-strip-types scripts/generate-seed.mjs`.
+ * source of truth: regenerate with `node --experimental-strip-types --import ./test/register.mjs scripts/generate-seed.mjs`.
  *
  * Money is converted to INTEGER cents. Category names become category rows and
  * products reference them by slug id. Seed customers become `users` rows with a
  * NULL password_hash (visible to admin, cannot log in). Seed orders keep their
  * numbers/dates/status; they carry no line items in the source data, so
  * order_items is intentionally left empty for them (documented below).
+ *
+ * Also emits migrations/0003_product_images.sql: product images became short
+ * keys (the product-type slug, resolved to self-hosted photos by
+ * lib/catalog/product-images.ts). 0002 is already APPLIED everywhere, so it is
+ * never rewritten for this; 0003 UPDATEs the seeded rows instead. Run
+ *   node --experimental-strip-types --import ./test/register.mjs scripts/generate-seed.mjs --images-only
+ * to (re)write only 0003. A full run (fresh databases / admin rotation) seeds
+ * the same keys directly, and 0003 is then a no-op.
  */
 
 import { pbkdf2Sync, randomBytes } from "node:crypto";
@@ -43,6 +51,32 @@ function paymentStatusFor(orderStatus) {
 const customerByEmail = new Map(
   customers.map((c) => [c.email.toLowerCase(), c.id]),
 );
+
+/* ------------------------- 0003: product image keys ------------------------ */
+{
+  const imageLines = [
+    "-- Migration 0003 — product images become short keys (generated).",
+    "-- Source: lib/data/products.ts. Do not hand-edit; regenerate via",
+    "--   node --experimental-strip-types --import ./test/register.mjs scripts/generate-seed.mjs --images-only",
+    "--",
+    "-- 0002 seeded inline SVG data URIs. Each seeded product now carries the key",
+    "-- of its product type (e.g. 'wireless-headphones'), which the storefront",
+    "-- resolves to self-hosted AVIF/WebP images (lib/catalog/product-images.ts).",
+    "-- UPDATE-only and idempotent: only rows still holding a generated SVG",
+    "-- placeholder are touched.",
+    "",
+  ];
+  for (const p of products) {
+    imageLines.push(
+      `UPDATE products SET image = ${q(p.image)} ` +
+        `WHERE id = ${q(p.id)} AND (image IS NULL OR image LIKE 'data:image/svg+xml,%');`,
+    );
+  }
+  const out3 = join(root, "migrations", "0003_product_images.sql");
+  writeFileSync(out3, imageLines.join("\n") + "\n");
+  console.log(`Wrote ${out3}\n  products=${products.length} (image keys)`);
+  if (process.argv.includes("--images-only")) process.exit(0);
+}
 
 /* ------------------------------- admin hash ------------------------------- */
 // PBKDF2-SHA256 hash of the demo admin password. Format documented for Phase D:

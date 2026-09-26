@@ -12,11 +12,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  categoryPlaceholderImage,
   products,
   PRODUCT_CATEGORIES,
   PRODUCT_STATUSES,
+  PRODUCT_TYPE_NOUNS,
   PRICE_BUCKETS,
 } from "./products.ts";
+import { productImageKey } from "../catalog/product-images.ts";
 import {
   categoryIdFromName,
   categoryName,
@@ -50,17 +53,20 @@ test("catalog is non-empty and every product is field-valid", () => {
   }
 });
 
-test("every product image is a category-appropriate self-contained SVG (no random stock photos)", () => {
+test("every product image is the key of its own category's product type", () => {
   for (const p of products) {
-    assert.ok(
-      p.image.startsWith("data:image/svg+xml,"),
-      `image is not an inline SVG data URI: ${p.id}`,
-    );
-    assert.ok(!/picsum|unsplash|placeholder\.com/i.test(p.image), `external stock image: ${p.id}`);
-    // The category name is rendered into the image, so it agrees with the record.
-    const decoded = decodeURIComponent(p.image);
-    assert.ok(decoded.includes(p.category), `image does not reference its category: ${p.id}`);
+    const keys = PRODUCT_TYPE_NOUNS[p.category].map(productImageKey);
+    assert.ok(keys.includes(p.image), `${p.id}: "${p.image}" is not a ${p.category} product type`);
+    assert.match(p.image, /^[a-z0-9]+(-[a-z0-9]+)*$/, `${p.id}: image must be a short key`);
   }
+  // Short keys, not data URIs: the catalog payload no longer carries images.
+  assert.ok(products.every((p) => p.image.length <= 40));
+});
+
+test("runtime-created products get a self-contained category placeholder", () => {
+  const image = categoryPlaceholderImage("Gaming", "Custom Pad");
+  assert.ok(image.startsWith("data:image/svg+xml,"));
+  assert.ok(decodeURIComponent(image).includes("Gaming"));
 });
 
 test("product names are unique (no accidental duplicate products)", () => {
