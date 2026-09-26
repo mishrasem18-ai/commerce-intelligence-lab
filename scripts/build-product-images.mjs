@@ -13,8 +13,12 @@
  *      content-hashed names: `<slug>.<hash>-<width>.<avif|webp>`, where the
  *      hash covers all six outputs, so any change yields new immutable URLs;
  *   4. enforce the byte budget — 640px WebP ≤ 40 KB, 320px WebP ≤ 15 KB. WebP
- *      quality steps down from 80 to a floor of 50; still over budget ⇒ the
- *      script fails (exit 1) and writes nothing for that image.
+ *      quality steps down from 80 to a floor of 50 with a sharp (lanczos3)
+ *      resample. Dense textures (rugs, knits, weaves, wood grain) can miss the
+ *      budget even then, so the resample softens in fixed steps — mitchell
+ *      kernel + 0.6px blur (quality floor 40), then + 0.8px blur (floor 30) —
+ *      and the AVIF of that width uses the same resample. Still over budget ⇒
+ *      the script fails (exit 1) and writes nothing.
  *
  * Writes lib/data/product-image-assets.ts (slug → hash + dominant colour),
  * the only thing the client bundle needs to build srcsets, and deletes stale
@@ -41,7 +45,13 @@ const MAP_OUT = arg("map") ?? join(root, "lib/data/product-image-assets.ts");
 export const WIDTHS = [320, 640, 960];
 const WEBP_BUDGET = { 320: 15 * 1024, 640: 40 * 1024 };
 const WEBP_QUALITY_START = 80;
-const WEBP_QUALITY_FLOOR = 50;
+/** Resample ladder, tried in order until the WebP fits its budget. */
+const RESAMPLE = [
+  { name: "sharp", kernel: "lanczos3", blur: 0, floor: 50 },
+  { name: "soft", kernel: "mitchell", blur: 0.6, floor: 40 },
+  { name: "softer", kernel: "mitchell", blur: 0.8, floor: 30 },
+];
+const WEBP_QUALITY_FLOOR = RESAMPLE.at(-1).floor;
 const AVIF_QUALITY = 50;
 const CONCURRENCY = 4;
 const FILE_PATTERN = /^[a-z0-9-]+\.[0-9a-f]{10}-(320|640|960)\.(avif|webp)$/;
@@ -51,15 +61,20 @@ const checkOnly = process.argv.includes("--check");
 const manifest = JSON.parse(readFileSync(MANIFEST, "utf8"));
 const entries = manifest.entries.filter((e) => e.provider !== "none" && e.source_path);
 
+function resized(square, width, resample) {
+  const image = square.clone().resize(width, width, { kernel: resample.kernel });
+  return resample.blur ? image.blur(resample.blur) : image;
+}
+
 async function encodeWebp(square, width) {
   const budget = WEBP_BUDGET[width];
-  for (let quality = WEBP_QUALITY_START; quality >= WEBP_QUALITY_FLOOR; quality -= 5) {
-    const buffer = await square
-      .clone()
-      .resize(width, width, { kernel: "lanczos3" })
-      .webp({ quality, effort: 6, smartSubsample: true })
-      .toBuffer();
-    if (!budget || buffer.length <= budget) return { buffer, quality };
+  for (const resample of RESAMPLE) {
+    for (let quality = WEBP_QUALITY_START; quality >= resample.floor; quality -= 5) {
+      const buffer = await resized(square, width, resample)
+        .webp({ quality, effort: 6, smartSubsample: true })
+        .toBuffer();
+      if (!budget || buffer.length <= budget) return { buffer, quality, resample };
+    }
   }
   return null;
 }
@@ -91,13 +106,12 @@ async function processEntry(entry) {
         error: `${width}px WebP exceeds ${WEBP_BUDGET[width] / 1024} KB even at quality ${WEBP_QUALITY_FLOOR}`,
       };
     }
-    const avif = await square
-      .clone()
-      .resize(width, width, { kernel: "lanczos3" })
+    const avif = await resized(square, width, webp.resample)
       .avif({ quality: AVIF_QUALITY, effort: 5, chromaSubsampling: "4:2:0" })
       .toBuffer();
-    outputs.push({ width, ext: "webp", buffer: webp.buffer, quality: webp.quality });
-    outputs.push({ width, ext: "avif", buffer: avif, quality: AVIF_QUALITY });
+    const resample = webp.resample.name;
+    outputs.push({ width, ext: "webp", buffer: webp.buffer, quality: webp.quality, resample });
+    outputs.push({ width, ext: "avif", buffer: avif, quality: AVIF_QUALITY, resample });
   }
 
   const hash = createHash("sha256");
@@ -181,7 +195,8 @@ let total = 0;
 const rows = results.map((r) => {
   const by = Object.fromEntries(r.files.map((f) => [`${f.ext}${f.width}`, f]));
   total += r.files.reduce((sum, f) => sum + f.buffer.length, 0);
-  return `${r.slug.padEnd(28)} webp ${kb(by.webp320.buffer.length)} ${kb(by.webp640.buffer.length)} ${kb(by.webp960.buffer.length)} KB (q${by.webp640.quality})  avif ${kb(by.avif320.buffer.length)} ${kb(by.avif640.buffer.length)} ${kb(by.avif960.buffer.length)} KB`;
+  const soft = WIDTHS.map((w) => by[`webp${w}`].resample).filter((n) => n !== "sharp");
+  return `${r.slug.padEnd(28)} webp ${kb(by.webp320.buffer.length)} ${kb(by.webp640.buffer.length)} ${kb(by.webp960.buffer.length)} KB (q${by.webp320.quality}/${by.webp640.quality}${soft.length ? ` resample ${WIDTHS.map((w) => by[`webp${w}`].resample).join("/")}` : ""})  avif ${kb(by.avif320.buffer.length)} ${kb(by.avif640.buffer.length)} ${kb(by.avif960.buffer.length)} KB`;
 });
 console.log(rows.join("\n"));
 const worst640 = Math.max(...results.map((r) => r.files.find((f) => f.ext === "webp" && f.width === 640).buffer.length));
