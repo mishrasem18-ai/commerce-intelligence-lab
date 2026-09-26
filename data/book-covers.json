@@ -1,0 +1,161 @@
+{
+  "$comment": "Build-time config for scripts/images/render-book-covers.mjs. Every Books-category product shares ONE real CC0 photo of a cloth hardcover (base); each fictional title is composited onto its cover (text removed, tinted, re-typeset). Outputs go to assets/product-source/books/<slug>.png (gitignored cache, regenerate with: node scripts/images/render-book-covers.mjs). All titles, authors and imprints are fictional.",
+  "base": {
+    "noun": "Blank Hardcover Book",
+    "provider": "wikimedia",
+    "origin_page_url": "https://commons.wikimedia.org/wiki/File:Cover_of_the_Unsplash_book_(Unsplash).jpg",
+    "file_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/33/Cover_of_the_Unsplash_book_%28Unsplash%29.jpg/1920px-Cover_of_the_Unsplash_book_%28Unsplash%29.jpg",
+    "file_width": 1920,
+    "file_height": 1440,
+    "source_file": "assets/product-source/blank-hardcover-book.jpg",
+    "creator": "Sophia Baboolal sophiababoolal",
+    "license_code": "cc0",
+    "license_version": "1.0",
+    "license_name": "CC0",
+    "license_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "crop": { "left": 207, "top": 0, "size": 1440 },
+    "geometry": {
+      "$comment": "File-pixel coordinates in the 1920x1440 base photo (front-facing, so the cover is an axis-aligned rectangle). book = whole cased cover incl. hinge; caps = spine head/tail caps that stand ~2px proud of the boards; board = front board right of the hinge groove; clean = region whose printed text is removed and re-synthesised from text-free cloth.",
+      "book": { "left": 468, "top": 118, "right": 1387, "bottom": 1336 },
+      "caps": [{ "left": 467, "top": 115, "right": 500, "bottom": 1337 }],
+      "board": { "left": 502, "top": 118, "right": 1387, "bottom": 1336 },
+      "clean": { "left": 555, "top": 158, "right": 1376, "bottom": 1302 }
+    }
+  },
+  "output": { "dir": "assets/product-source/books", "size": 1200 },
+  "fonts": {
+    "serif": "Baskerville, 'Libre Baskerville', 'Baskerville Old Face', Georgia, 'DejaVu Serif', serif"
+  },
+  "titles": [
+    {
+      "noun": "The Silent Ledger",
+      "slug": "the-silent-ledger",
+      "title": "The Silent Ledger",
+      "lines": ["The Silent", "Ledger"],
+      "author": "Margot Ellery",
+      "imprint": "Inkwell",
+      "layout": "centered",
+      "frame": "double",
+      "motif": "rule",
+      "colour_name": "deep teal",
+      "colourway": { "cover": "#1f5157", "accent": "#c9a45c", "text": "#f1e7d0" }
+    },
+    {
+      "noun": "Atlas of Small Things",
+      "slug": "atlas-of-small-things",
+      "title": "Atlas of Small Things",
+      "lines": ["Atlas of", "Small Things"],
+      "author": "Tobias Renwick",
+      "imprint": "Chapterhouse",
+      "layout": "left",
+      "frame": "none",
+      "motif": "dots",
+      "colour_name": "ochre",
+      "colourway": { "cover": "#c99a3b", "accent": "#3a2f22", "text": "#241d15" }
+    },
+    {
+      "noun": "Notes on Momentum",
+      "slug": "notes-on-momentum",
+      "title": "Notes on Momentum",
+      "lines": ["Notes on", "Momentum"],
+      "author": "Priya Halvorsen",
+      "imprint": "Paperbound",
+      "layout": "left",
+      "frame": "none",
+      "motif": "bars",
+      "colour_name": "terracotta",
+      "colourway": { "cover": "#b3552f", "accent": "#f0d6ad", "text": "#faefdc" }
+    },
+    {
+      "noun": "A Field of Signals",
+      "slug": "a-field-of-signals",
+      "title": "A Field of Signals",
+      "lines": ["A Field", "of Signals"],
+      "author": "Jonah Achterberg",
+      "imprint": "Marginalia",
+      "layout": "centered",
+      "frame": "none",
+      "motif": "waves",
+      "colour_name": "sage green",
+      "colourway": { "cover": "#7e9170", "accent": "#f4eedc", "text": "#fbf7ec" }
+    },
+    {
+      "noun": "The Long Quarter",
+      "slug": "the-long-quarter",
+      "title": "The Long Quarter",
+      "lines": ["The Long", "Quarter"],
+      "author": "Celeste Marchetti",
+      "imprint": "Inkwell",
+      "layout": "centered",
+      "frame": "single",
+      "motif": "diamond",
+      "colour_name": "navy",
+      "colourway": { "cover": "#1f2c47", "accent": "#d6b26a", "text": "#efe3c8" }
+    },
+    {
+      "noun": "Systems & Seasons",
+      "slug": "systems-and-seasons",
+      "title": "Systems & Seasons",
+      "lines": ["Systems", "& Seasons"],
+      "author": "Idris Okonkwo-Hale",
+      "imprint": "Chapterhouse",
+      "layout": "centered",
+      "frame": "none",
+      "motif": "ring",
+      "colour_name": "oxblood",
+      "colourway": { "cover": "#6d2231", "accent": "#e0bf86", "text": "#f5e8d2" }
+    },
+    {
+      "noun": "Blueprints for Nothing",
+      "slug": "blueprints-for-nothing",
+      "title": "Blueprints for Nothing",
+      "lines": ["Blueprints", "for Nothing"],
+      "author": "Lena Sorvik",
+      "imprint": "Paperbound",
+      "layout": "left",
+      "frame": "none",
+      "motif": "grid",
+      "colour_name": "cobalt blue",
+      "colourway": { "cover": "#2d5da6", "accent": "#dfe8f5", "text": "#ffffff" }
+    },
+    {
+      "noun": "The Analog Mind",
+      "slug": "the-analog-mind",
+      "title": "The Analog Mind",
+      "lines": ["The Analog", "Mind"],
+      "author": "Harriet Quill",
+      "imprint": "Marginalia",
+      "layout": "centered",
+      "frame": "none",
+      "motif": "dial",
+      "colour_name": "charcoal",
+      "colourway": { "cover": "#2f3034", "accent": "#d4583e", "text": "#ede8de" }
+    },
+    {
+      "noun": "Ledgers & Legends",
+      "slug": "ledgers-and-legends",
+      "title": "Ledgers & Legends",
+      "lines": ["Ledgers", "& Legends"],
+      "author": "Emrys Calloway",
+      "imprint": "Inkwell",
+      "layout": "centered",
+      "frame": "double",
+      "motif": "diamond",
+      "colour_name": "forest green",
+      "colourway": { "cover": "#26442f", "accent": "#cdae63", "text": "#efe2c2" }
+    },
+    {
+      "noun": "Quiet Machines",
+      "slug": "quiet-machines",
+      "title": "Quiet Machines",
+      "lines": ["Quiet", "Machines"],
+      "author": "Noor Vantongeren",
+      "imprint": "Chapterhouse",
+      "layout": "left",
+      "frame": "none",
+      "motif": "gears",
+      "colour_name": "dusty rose",
+      "colourway": { "cover": "#d3a497", "accent": "#4a3440", "text": "#2e2228" }
+    }
+  ]
+}

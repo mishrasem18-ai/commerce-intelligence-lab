@@ -7,5 +7,386 @@ export const PRODUCT_IMAGE_ASSETS = {
     640,
     960
   ],
-  "images": {}
+  "images": {
+    "4k-webcam": {
+      "hash": "5ae21267ed",
+      "color": "#f8f8f8"
+    },
+    "a-field-of-signals": {
+      "hash": "9f43e0b9fa",
+      "color": "#f8f8f8"
+    },
+    "action-camera": {
+      "hash": "f197017b3d",
+      "color": "#f8f8f8"
+    },
+    "arcade-stick": {
+      "hash": "705f476a09",
+      "color": "#d8d8d8"
+    },
+    "area-rug": {
+      "hash": "bc598ef303",
+      "color": "#180808"
+    },
+    "atlas-of-small-things": {
+      "hash": "d8aa02f27d",
+      "color": "#f8f8f8"
+    },
+    "bar-stool": {
+      "hash": "aae7471ce8",
+      "color": "#f8f8f8"
+    },
+    "bed-frame": {
+      "hash": "f042ad1f5d",
+      "color": "#f8f8f8"
+    },
+    "blueprints-for-nothing": {
+      "hash": "e8bed15bc6",
+      "color": "#f8f8f8"
+    },
+    "board-game": {
+      "hash": "7360bdf63b",
+      "color": "#f8f8f8"
+    },
+    "bookshelf": {
+      "hash": "adc6f20f9a",
+      "color": "#f8f8e8"
+    },
+    "building-kit": {
+      "hash": "2755dfad62",
+      "color": "#d8c898"
+    },
+    "canvas-backpack": {
+      "hash": "7a263c39f0",
+      "color": "#f8f8f8"
+    },
+    "capture-card": {
+      "hash": "6be8ec3195",
+      "color": "#888878"
+    },
+    "card-holder": {
+      "hash": "7fa44ff023",
+      "color": "#d8d8d8"
+    },
+    "cashmere-scarf": {
+      "hash": "82921ca046",
+      "color": "#f8f8f8"
+    },
+    "ceramic-vase": {
+      "hash": "ec2b59b6ad",
+      "color": "#686868"
+    },
+    "clay-mask": {
+      "hash": "8347b6b354",
+      "color": "#383838"
+    },
+    "compression-tee": {
+      "hash": "148a21c0a5",
+      "color": "#e8e8e8"
+    },
+    "console-stand": {
+      "hash": "33776fea79",
+      "color": "#f8f8f8"
+    },
+    "console-table": {
+      "hash": "49759079fb",
+      "color": "#989898"
+    },
+    "controller": {
+      "hash": "83e13ba295",
+      "color": "#f8f8f8"
+    },
+    "cycling-helmet": {
+      "hash": "839889cb33",
+      "color": "#f8f8f8"
+    },
+    "denim-jacket": {
+      "hash": "aa4ba86be9",
+      "color": "#080808"
+    },
+    "desk-lamp": {
+      "hash": "d980000a68",
+      "color": "#f8f8f8"
+    },
+    "dollhouse": {
+      "hash": "65ca32633f",
+      "color": "#d8c8a8"
+    },
+    "dumbbell-set": {
+      "hash": "538e30e2bc",
+      "color": "#f8f8f8"
+    },
+    "facial-roller": {
+      "hash": "8a96bb9b5d",
+      "color": "#f8f8f8"
+    },
+    "foam-roller": {
+      "hash": "715b833102",
+      "color": "#f8f8e8"
+    },
+    "gaming-mouse": {
+      "hash": "0a8409a94d",
+      "color": "#a88868"
+    },
+    "hair-oil": {
+      "hash": "9ca5da2a54",
+      "color": "#e8e8e8"
+    },
+    "headset": {
+      "hash": "1d6d554d56",
+      "color": "#f8f8f8"
+    },
+    "hydrating-cleanser": {
+      "hash": "a7b6a3abad",
+      "color": "#d8d8d8"
+    },
+    "jump-rope": {
+      "hash": "38dab0b191",
+      "color": "#988888"
+    },
+    "keychain": {
+      "hash": "48c8dcc414",
+      "color": "#181818"
+    },
+    "knit-beanie": {
+      "hash": "e530812cb3",
+      "color": "#282828"
+    },
+    "leather-belt": {
+      "hash": "ead849c821",
+      "color": "#f8f8f8"
+    },
+    "leather-wallet": {
+      "hash": "9d4baeb483",
+      "color": "#f8f8f8"
+    },
+    "ledgers-and-legends": {
+      "hash": "c15ab755a1",
+      "color": "#f8f8f8"
+    },
+    "linen-blazer": {
+      "hash": "9bedd445e7",
+      "color": "#181818"
+    },
+    "lip-balm-trio": {
+      "hash": "be2bbf63c7",
+      "color": "#384858"
+    },
+    "lounge-chair": {
+      "hash": "f266d9165f",
+      "color": "#c8c8b8"
+    },
+    "marble-run": {
+      "hash": "e3ff963929",
+      "color": "#282818"
+    },
+    "matte-lipstick": {
+      "hash": "0d24f3104c",
+      "color": "#f8f8f8"
+    },
+    "mechanical-keyboard": {
+      "hash": "1d9125305f",
+      "color": "#f8f8f8"
+    },
+    "mechanical-keypad": {
+      "hash": "7ecebdd219",
+      "color": "#c8c8b8"
+    },
+    "merino-sweater": {
+      "hash": "0049f43cf1",
+      "color": "#f8f8f8"
+    },
+    "night-cream": {
+      "hash": "035ab62553",
+      "color": "#f8f8f8"
+    },
+    "nightstand": {
+      "hash": "636e6c2590",
+      "color": "#e8e8e8"
+    },
+    "noise-cancelling-earbuds": {
+      "hash": "65a09a88a5",
+      "color": "#f8f8f8"
+    },
+    "notes-on-momentum": {
+      "hash": "0f1473df58",
+      "color": "#f8f8f8"
+    },
+    "oak-coffee-table": {
+      "hash": "94f6dc255f",
+      "color": "#b8b8b8"
+    },
+    "ottoman": {
+      "hash": "924b750ccc",
+      "color": "#c8c8c8"
+    },
+    "oxford-shirt": {
+      "hash": "0490be9693",
+      "color": "#d8d8c8"
+    },
+    "phone-case": {
+      "hash": "da8e9e5858",
+      "color": "#a8a8a8"
+    },
+    "picture-frame": {
+      "hash": "a014c6b5dd",
+      "color": "#d8d8d8"
+    },
+    "planter-set": {
+      "hash": "a4965629a6",
+      "color": "#f8f8f8"
+    },
+    "play-tent": {
+      "hash": "7d070d57a5",
+      "color": "#080808"
+    },
+    "plush-bear": {
+      "hash": "ccf816f675",
+      "color": "#f8f8f8"
+    },
+    "power-bank": {
+      "hash": "cf2aebc17b",
+      "color": "#f8f8f8"
+    },
+    "puzzle-cube": {
+      "hash": "117121aa04",
+      "color": "#d8d8d8"
+    },
+    "quiet-machines": {
+      "hash": "7faba08046",
+      "color": "#f8f8f8"
+    },
+    "rc-car": {
+      "hash": "77fd126d0d",
+      "color": "#d8c8b8"
+    },
+    "resistance-bands": {
+      "hash": "72f692b68b",
+      "color": "#f8f8f8"
+    },
+    "rgb-mousepad": {
+      "hash": "ba8ac6f6ca",
+      "color": "#e8d8c8"
+    },
+    "running-shoes": {
+      "hash": "c3a4d07a60",
+      "color": "#f8f8f8"
+    },
+    "scented-candle": {
+      "hash": "c9d8c7e72c",
+      "color": "#e8e8e8"
+    },
+    "sideboard": {
+      "hash": "4aa44849db",
+      "color": "#f8f8f8"
+    },
+    "silk-tie": {
+      "hash": "5084821db0",
+      "color": "#f8f8f8"
+    },
+    "slim-chinos": {
+      "hash": "a72dd1302e",
+      "color": "#a8a898"
+    },
+    "smart-speaker": {
+      "hash": "5608dd1a81",
+      "color": "#b8b8b8"
+    },
+    "smartwatch": {
+      "hash": "31b88d1668",
+      "color": "#f8f8f8"
+    },
+    "storage-basket": {
+      "hash": "d86cb999fc",
+      "color": "#c8c8c8"
+    },
+    "streaming-mic": {
+      "hash": "6f6eec8177",
+      "color": "#282828"
+    },
+    "sunglasses": {
+      "hash": "75a9e43bcb",
+      "color": "#f8f8f8"
+    },
+    "systems-and-seasons": {
+      "hash": "ddf85d7044",
+      "color": "#f8f8f8"
+    },
+    "table-runner": {
+      "hash": "c4c64bd566",
+      "color": "#c8c8c8"
+    },
+    "the-analog-mind": {
+      "hash": "b3d7c38182",
+      "color": "#f8f8f8"
+    },
+    "the-long-quarter": {
+      "hash": "828460610c",
+      "color": "#f8f8f8"
+    },
+    "the-silent-ledger": {
+      "hash": "292f78767b",
+      "color": "#f8f8f8"
+    },
+    "throw-blanket": {
+      "hash": "7b4c14a4dd",
+      "color": "#a89888"
+    },
+    "training-gloves": {
+      "hash": "47ce52bfe3",
+      "color": "#080808"
+    },
+    "travel-pouch": {
+      "hash": "5a99e8b67e",
+      "color": "#f8f8f8"
+    },
+    "usb-c-hub": {
+      "hash": "d2d5ac9c75",
+      "color": "#f8f8f8"
+    },
+    "vitamin-c-serum": {
+      "hash": "c0c7cf8b60",
+      "color": "#58b8c8"
+    },
+    "wall-clock": {
+      "hash": "a9bd8d4e7b",
+      "color": "#e8d8d8"
+    },
+    "watch-strap": {
+      "hash": "991622658b",
+      "color": "#f8f8f8"
+    },
+    "water-bottle": {
+      "hash": "92c3bbd059",
+      "color": "#a80808"
+    },
+    "weekender-bag": {
+      "hash": "2084cb65d8",
+      "color": "#482828"
+    },
+    "wireless-charger": {
+      "hash": "590f39042a",
+      "color": "#080808"
+    },
+    "wireless-headphones": {
+      "hash": "27615e56e8",
+      "color": "#f8f8f8"
+    },
+    "wooden-blocks": {
+      "hash": "56c9e7b358",
+      "color": "#d8d8d8"
+    },
+    "wool-overcoat": {
+      "hash": "d86081ebee",
+      "color": "#e8e8e8"
+    },
+    "writing-desk": {
+      "hash": "f021b229c1",
+      "color": "#787878"
+    },
+    "yoga-mat": {
+      "hash": "8d203ae3ca",
+      "color": "#080808"
+    }
+  }
 } as const;
