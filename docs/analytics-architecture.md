@@ -188,12 +188,25 @@ One event per **deliberate** search, with the rules owned by
 - **URL** — only when the shop is the document's *entry* URL (Navigation
   Timing), once per document: a deep link, shared link or refresh. The header
   reaches `/shop?q=` by client-side push, never as a document load, so it can
-  never double-fire; back/forward to a `?q=` page is history, not a search.
-- **Dedupe** — an identical consecutive submission (same source, term and
-  result count, e.g. Enter pressed twice) is ignored.
-- **PII** — an email- or phone-like term becomes `"[redacted]"` in the PII
-  guard, before any adapter; the same term in the URL is redacted in
-  `page.query_string` / `page_location`.
+  never double-fire. Two document loads are deliberately *not* searches:
+  - back/forward to a `?q=` page (Navigation Timing type `back_forward`) is
+    history, not a new search;
+  - an in-app navigation the router turned into a full page load (after a
+    deploy, a network or RSC error). The header and the shop box record their
+    target before navigating (`expectNavigation`: per-tab `sessionStorage`,
+    ignored after 30 s); a document landing on that target is the same search
+    arriving, not a second one.
+
+  The "url" search waits for the product store to hydrate, so
+  `results_count` includes locally created (overlay) products the grid shows.
+- **Dedupe** — a submission identical to the previous one (same source, term,
+  result count, page URL *and* input revision, which the UI bumps on every
+  edit) is ignored: Enter pressed twice. Retyping the same term, or repeating
+  a search from another page, is a new search and counts again.
+- **PII** — an email- or phone-like term becomes `"[redacted]"` *before* the
+  100-character truncation (a cut could otherwise leave a partial email), and
+  the PII guard re-checks `search.query` in every envelope; the same term in
+  the URL is redacted in `page.query_string` / `page_location`.
 
 The GTM adapter maps it to GA4 `search` with `search_term`,
 `search_results_count`, `search_source` and `search_zero_results`.

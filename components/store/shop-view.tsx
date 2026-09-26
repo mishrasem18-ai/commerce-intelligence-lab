@@ -67,7 +67,7 @@ const sortOptions: SelectOption[] = SHOP_SORT_KEYS.map((key) => ({
  * can never disagree either (see `queryDraft` below).
  */
 export function ShopView() {
-  const { products } = useProducts();
+  const { products, hydrated } = useProducts();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -96,7 +96,11 @@ export function ShopView() {
     (patch: Partial<ShopQuery>) => {
       const next: ShopQuery = { ...query, page: 1, ...patch };
       const qs = buildShopParams(next).toString();
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      const href = qs ? `${pathname}?${qs}` : pathname;
+      // If the router ever turns this into a full page load, the new
+      // document must not count as a "url" search (lib/analytics/search.ts).
+      searchTracker.expectNavigation(href);
+      router.replace(href, { scroll: false });
     },
     [query, pathname, router],
   );
@@ -127,17 +131,24 @@ export function ShopView() {
   // search.submit for a document LOADED with ?q= (deep link / refresh):
   // search_source "url", once per document. Client-side arrivals (the header
   // search, back/forward) never qualify — see lib/analytics/search.ts.
+  // Waits for the product store to hydrate, so results_count includes
+  // locally created products the grid is about to show.
   const currentUrl = `${pathname}?${searchParams.toString()}`;
   React.useEffect(() => {
+    if (!hydrated) return;
     searchTracker.landed(currentUrl, query.q, total);
-  }, [currentUrl, query.q, total]);
+  }, [currentUrl, query.q, total, hydrated]);
+
+  // Bumped on every edit of the box: Enter twice on unchanged text is one
+  // search; retyping the same term is a new one.
+  const revision = React.useRef(0);
 
   // The shop box's deliberate search: Enter or the mobile "Search" key. The
   // grid already filters live while typing; keystrokes are never searches.
   const submitSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const results = selectShopPage(products, { ...query, q: queryDraft, page: 1 }).total;
-    searchTracker.submit(queryDraft, results, "shop");
+    searchTracker.submit(queryDraft, results, "shop", revision.current);
     if (queryDraft !== query.q) updateQuery({ q: queryDraft });
     // Dismiss the on-screen keyboard so mobile shoppers see the results.
     event.currentTarget.querySelector("input")?.blur();
@@ -153,6 +164,7 @@ export function ShopView() {
             enterKeyHint="search"
             value={queryDraft}
             onChange={(e) => {
+              revision.current += 1;
               setQueryDraft(e.target.value);
               updateQuery({ q: e.target.value });
             }}

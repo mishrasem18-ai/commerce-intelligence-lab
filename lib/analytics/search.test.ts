@@ -11,16 +11,38 @@ import {
   createSearchTracker,
   MAX_SEARCH_TERM_LENGTH,
   normalizeSearchTerm,
+  PENDING_NAVIGATION_KEY,
 } from "./search.ts";
 import { createAnalytics } from "./analytics.ts";
 import { createConsentStore } from "./consent.ts";
 import { createGtmAdapter, mapEventToDataLayer, type GtmWindow } from "./adapters/gtm-adapter.ts";
 import type { SearchContext } from "./schema.ts";
 
-function harness(entryUrl: string | null = "/") {
+function memoryStore() {
+  const map = new Map<string, string>();
+  return {
+    getItem: (k: string) => map.get(k) ?? null,
+    setItem: (k: string, v: string) => void map.set(k, v),
+    removeItem: (k: string) => void map.delete(k),
+  };
+}
+
+function harness(
+  entryUrl: string | null = "/",
+  options: { type?: string; at?: string; clock?: { now: number } } = {},
+) {
   const tracked: SearchContext[] = [];
-  const tracker = createSearchTracker({ track: (s) => tracked.push(s), entryUrl: () => entryUrl });
-  return { tracker, tracked };
+  const location = { url: options.at ?? "/" };
+  const clock = options.clock ?? { now: 1_000_000 };
+  const store = memoryStore();
+  const tracker = createSearchTracker({
+    track: (s) => tracked.push(s),
+    entry: () => (entryUrl === null ? null : { url: entryUrl, type: options.type ?? "navigate" }),
+    currentUrl: () => location.url,
+    storage: () => store,
+    now: () => clock.now,
+  });
+  return { tracker, tracked, location, clock, store };
 }
 
 test("terms are normalised: NFKC, trimmed, collapsed, lower-cased, capped", () => {
@@ -38,6 +60,28 @@ test("context carries count, source and zero_results", () => {
     zero_results: false,
   });
   assert.equal(buildSearchContext("zzz", 0, "shop")!.zero_results, true);
+});
+
+test("the same search repeated later (retyped, or from another page) counts again", () => {
+  const { tracker, tracked, location } = harness("/", { at: "/cart" });
+  tracker.submit("desk", 5, "header", 1);
+  location.url = "/"; // later, from the home page, unchanged box
+  tracker.submit("desk", 5, "header", 1);
+  location.url = "/shop?q=desk";
+  tracker.submit("desk", 5, "shop", 7);
+  tracker.submit("desk", 5, "shop", 7); // Enter again, nothing edited: ignored
+  tracker.submit("desk", 5, "shop", 9); // cleared and retyped "desk": new search
+  assert.deepEqual(
+    tracked.map((s) => s.search_source),
+    ["header", "header", "shop", "shop"],
+  );
+});
+
+test("a long term is redacted before truncation (no partial email survives)", () => {
+  const { tracker, tracked } = harness();
+  tracker.submit(`${"a".repeat(88)} jane.doe@example.com`, 0, "header");
+  tracker.submit(`${"a".repeat(88)} 415-555-0123`, 0, "shop");
+  assert.deepEqual(tracked.map((s) => s.query), ["[redacted]", "[redacted]"]);
 });
 
 test("one event per deliberate submit; identical repeats are ignored", () => {
@@ -62,10 +106,51 @@ test("a suggestion is its own signal, not a duplicate plain submit", () => {
 
 test("header submit then arriving on /shop?q= fires once (header only)", () => {
   // The document was loaded on /cart; the header pushes to /shop?q=lamp.
-  const { tracker, tracked } = harness("/cart");
+  const { tracker, tracked, store } = harness("/cart", { at: "/cart" });
   tracker.submit("lamp", 4, "header");
+  tracker.expectNavigation("/shop?q=lamp");
   tracker.landed("/shop?q=lamp", "lamp", 4);
   assert.deepEqual(tracked.map((s) => s.search_source), ["header"]);
+  assert.equal(store.getItem(PENDING_NAVIGATION_KEY), null, "marker cleared on arrival");
+});
+
+test("an in-app navigation the router turned into a full page load is not a url search", () => {
+  // Header search on /cart; the push falls back to a document load of /shop?q=lamp.
+  const first = harness("/cart", { at: "/cart" });
+  first.tracker.submit("lamp", 4, "header");
+  first.tracker.expectNavigation("/shop?q=lamp");
+  // New document (fresh module state), same tab (same sessionStorage).
+  const tracked: SearchContext[] = [];
+  const reloaded = createSearchTracker({
+    track: (s) => tracked.push(s),
+    entry: () => ({ url: "/shop?q=lamp", type: "navigate" }),
+    currentUrl: () => "/shop?q=lamp",
+    storage: () => first.store,
+    now: () => first.clock.now + 2_000,
+  });
+  reloaded.landed("/shop?q=lamp", "lamp", 4);
+  assert.deepEqual(first.tracked.map((s) => s.search_source), ["header"]);
+  assert.deepEqual(tracked, [], "the header already counted this search");
+  // Same for a half-typed term in the shop box whose replace fell back.
+  const typed = harness("/shop?q=la", { at: "/shop?q=l" });
+  typed.tracker.expectNavigation("/shop?q=la");
+  typed.tracker.landed("/shop?q=la", "la", 9);
+  assert.deepEqual(typed.tracked, []);
+});
+
+test("a stale in-app marker does not suppress a later genuine deep link", () => {
+  const clock = { now: 1_000_000 };
+  const h = harness("/shop?q=lamp", { clock });
+  h.tracker.expectNavigation("/shop?q=lamp");
+  clock.now += 60_000; // older than PENDING_NAVIGATION_TTL_MS
+  h.tracker.landed("/shop?q=lamp", "lamp", 4);
+  assert.deepEqual(h.tracked.map((s) => s.search_source), ["url"]);
+});
+
+test("a back/forward document load of /shop?q= is history, not a search", () => {
+  const { tracker, tracked } = harness("/shop?q=lamp", { type: "back_forward" });
+  tracker.landed("/shop?q=lamp", "lamp", 4);
+  assert.deepEqual(tracked, []);
 });
 
 test("a deep link / refresh on /shop?q= fires once with source url", () => {
@@ -103,7 +188,8 @@ test("email/phone-like terms are redacted before any adapter sees them", () => {
   service.updateConsent("accept_all");
   const tracker = createSearchTracker({
     track: (search) => service.track("search.submit", { search }),
-    entryUrl: () => null,
+    entry: () => null,
+    currentUrl: () => "/",
   });
   tracker.submit("jane.doe@example.com", 0, "header");
   tracker.submit("+44 20 7946 0958", 0, "shop");

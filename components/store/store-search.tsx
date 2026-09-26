@@ -30,6 +30,8 @@ export function StoreSearch({
   const [query, setQuery] = React.useState("");
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
+  // Bumped on every edit: Enter twice on unchanged text is one search.
+  const revision = React.useRef(0);
 
   React.useEffect(() => {
     if (!open) return;
@@ -59,16 +61,18 @@ export function StoreSearch({
   // canonical search.submit fires here, before navigating; /shop never
   // re-fires for a client-side arrival (see lib/analytics/search.ts).
   const goToShop = () => {
-    searchTracker.submit(query, resultsCount(), "header");
+    const href = shopHref({ q: query });
+    searchTracker.submit(query, resultsCount(), "header", revision.current);
+    searchTracker.expectNavigation(href);
     setOpen(false);
     onNavigate?.();
-    router.push(shopHref({ q: query }));
+    router.push(href);
   };
 
   // Choosing a suggestion is its own signal (search_source "suggestion"),
   // never an extra plain submit.
   const openProduct = (id: string) => {
-    searchTracker.submit(query, resultsCount(), "suggestion");
+    searchTracker.submit(query, resultsCount(), "suggestion", revision.current);
     setOpen(false);
     setQuery("");
     onNavigate?.();
@@ -93,6 +97,7 @@ export function StoreSearch({
           autoFocus={autoFocus}
           value={query}
           onChange={(e) => {
+            revision.current += 1;
             setQuery(e.target.value);
             setOpen(true);
           }}

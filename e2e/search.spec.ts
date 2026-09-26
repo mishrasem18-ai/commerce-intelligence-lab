@@ -108,6 +108,36 @@ test("deep link /shop?q= fires once with source url; refresh fires once again", 
   expect(again.search?.search_source).toBe("url");
 });
 
+test("deep link /shop?q= counts locally created (overlay) products", async ({ page, context }) => {
+  // Baseline: the D1 catalog alone.
+  await page.goto("/shop?q=desk");
+  const [base] = await expectSearches(page, 1);
+  const d1Count = base.search?.results_count ?? 0;
+  expect(d1Count).toBeGreaterThan(0);
+
+  // An admin-created product lives only in the localStorage overlay until
+  // write-through; the grid shows it after hydration, so results_count must too.
+  const now = new Date().toISOString();
+  const overlay = [{
+    id: "prod-new-e2e-1", sku: "E2E-DSK-1", name: "Overlay Standing Desk",
+    description: "Created in the admin, not yet in D1.", categoryId: "furniture",
+    category: "Furniture", brand: "Aurora", price: 499, cost: 250, inventory: 5,
+    status: "Active", rating: 4.5, image: "", unitsSold: 0, revenue: 0,
+    createdAt: now, updatedAt: now,
+  }];
+  await context.addInitScript((value) => {
+    window.localStorage.setItem("cil.products.v1", value);
+  }, JSON.stringify(overlay));
+
+  const fresh = await context.newPage();
+  await fresh.goto("/shop?q=desk");
+  await expect(fresh.getByText("Overlay Standing Desk").first()).toBeVisible();
+  const [search] = await expectSearches(fresh, 1);
+  expect(search.search?.search_source).toBe("url");
+  expect(search.search?.results_count).toBe(d1Count + 1);
+  expect(search.search?.results_count).toBe(await shownCount(fresh));
+});
+
 test("leaving a deep-linked search and coming back does not re-fire", async ({ page }) => {
   await page.goto("/shop?q=desk");
   await expectSearches(page, 1);
