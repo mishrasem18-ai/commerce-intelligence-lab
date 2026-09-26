@@ -188,3 +188,56 @@ test("scrubPii applies the targeted sanitizers to page and search fields", () =>
   assert.equal(value.timestamp, "2026-07-26T10:00:00.000Z");
   assert.deepEqual(violations.sort(), ["page.path", "page.query_string", "search.query"]);
 });
+
+/* -------------------------------------------------------------------------- */
+/*  Review regressions: each case below leaked (or over-redacted) before      */
+/* -------------------------------------------------------------------------- */
+
+test("an email or phone in a query parameter NAME is redacted", () => {
+  // useSearchParams().toString() renders a bare key as "key=".
+  assert.equal(redactQueryString("jane%40x.com="), PII_REDACTED);
+  assert.equal(redactQueryString("category=home&jane%40x.com=1"), `category=home&${PII_REDACTED}`);
+  assert.equal(redactQueryString("4155550100="), PII_REDACTED);
+  assert.equal(redactQueryString("jane%40x.com"), PII_REDACTED);
+});
+
+test("half-typed emails (no TLD yet) are redacted in user text", () => {
+  for (const partial of ["john.smith@gmail", "john.smith@", "jane@x.c"]) {
+    assert.equal(redactSearchTerm(partial), PII_REDACTED, partial);
+    assert.equal(redactQueryString(`q=${encodeURIComponent(partial)}`), `q=${PII_REDACTED}`, partial);
+  }
+  assert.equal(redactPath("/account/orders/jane%40gmail"), `/account/orders/${PII_REDACTED}`);
+  // Not every "@" is an email: a leading handle-like "@home" has no local part.
+  assert.equal(redactSearchTerm("@home decor"), "@home decor");
+});
+
+test("double-encoded and malformed escapes do not hide an email", () => {
+  assert.equal(redactQueryString("q=jane%2540x.com"), `q=${PII_REDACTED}`);
+  assert.equal(redactQueryString("user_email=jane%2540x.com"), `user_email=${PII_REDACTED}`);
+  assert.equal(redactQueryString("q=jane%40x.com%"), `q=${PII_REDACTED}`);
+  assert.equal(redactQueryString("q=jos%E9%40x.com"), `q=${PII_REDACTED}`);
+  assert.equal(redactPath("/account/orders/jane%2540x.com"), `/account/orders/${PII_REDACTED}`);
+});
+
+test("full-width and non-ASCII digits / @ are normalised before matching", () => {
+  assert.equal(redactQueryString("q=jane%EF%BC%A0example%EF%BC%8Ecom"), `q=${PII_REDACTED}`); // ＠ ．
+  assert.equal(redactSearchTerm("４１５５５５０１００"), PII_REDACTED); // full-width digits
+  assert.equal(redactSearchTerm("٤١٥٥٥٥٠١٠٠"), PII_REDACTED); // Arabic-Indic digits
+  assert.equal(redactSearchTerm("९८७६५४३२१०"), PII_REDACTED); // Devanagari digits
+});
+
+test("a phone inside a longer digit run is still found", () => {
+  for (const term of ["415-555-0100 415-555-0101", "4155550100 12345678", "+44 20 7946 0958 0123"]) {
+    assert.equal(redactSearchTerm(term), PII_REDACTED, term);
+  }
+});
+
+test("attribution ids are not mistaken for phones (emails still are)", () => {
+  const ads = "gad_source=1&gad_campaignid=21876543210&utm_id=21876543210&gclid=Cj0KCQjw1234567890";
+  assert.equal(redactQueryString(ads), ads);
+  assert.equal(redactQueryString("msclkid=3a1b2c3d4e5f60718293a4b5c6d7e8f9"), "msclkid=3a1b2c3d4e5f60718293a4b5c6d7e8f9");
+  assert.equal(redactQueryString("page=2&sort=price-asc&category=home"), "page=2&sort=price-asc&category=home");
+  assert.equal(redactQueryString("utm_content=jane%40x.com"), `utm_content=${PII_REDACTED}`);
+  // Free-text parameters keep the phone check.
+  assert.equal(redactQueryString("q=4155550100"), `q=${PII_REDACTED}`);
+});

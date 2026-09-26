@@ -146,9 +146,17 @@ passwords, tokens, cookies, hashes, raw D1 records). Enforcement is layered:
    percent-encoding there: `page.path` per segment
    (`/account/orders/jane%40x.com` → `/account/orders/[redacted]`),
    `page.query_string` per parameter (`q=[redacted]&category=home`) and
-   `search.query` as a whole. Phone detection is deliberately limited to these
-   fields (timestamps and event ids are digit runs too), and identifiers such
-   as `ORD-1234567` or `prod-1000` are never mistaken for phones. The GTM
+   `search.query` as a whole. Text is read the way a person would read it:
+   percent-decoding is repeated and lenient (`%2540`, malformed escapes),
+   then NFKC-normalised (full-width `＠`, `４１５`); any Unicode digit counts;
+   half-typed emails (`jane@gmail`) and contact details in parameter NAMES
+   are caught, and long digit runs are searched for an embedded phone.
+   Phone detection is deliberately limited to these fields (timestamps and
+   event ids are digit runs too), identifiers such as `ORD-1234567` or
+   `prod-1000` are never mistaken for phones, and attribution/structure
+   parameters (`utm_*`, `gad_*`, `gclid`, `msclkid`, `page`, `sort`…) are
+   exempt from the phone check so campaign ids survive (emails are still
+   caught there). The GTM
    adapter rebuilds `page_location` from the scrubbed path + query, so the
    raw `document.location` never needs to reach GA4.
 5. **Titles carry no PII by construction** — see *Page titles* below.
