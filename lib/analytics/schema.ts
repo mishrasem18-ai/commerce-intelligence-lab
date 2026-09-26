@@ -49,6 +49,7 @@ export type PageType =
   | "auth_login"
   | "auth_signup"
   | "account"
+  /** Informational pages (e.g. /credits). */
   | "content"
   | "not_found"
   | "admin_login"

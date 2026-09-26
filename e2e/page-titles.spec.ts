@@ -14,6 +14,7 @@ const STORE: Array<[path: string, title: string, pageType: string]> = [
   ["/login", "Sign In · Aurora Market", "auth_login"],
   ["/signup", "Sign Up · Aurora Market", "auth_signup"],
   ["/order-confirmation/ORD-0000000", "Order Confirmation · Aurora Market", "order_confirmation"],
+  ["/credits", "Image Credits · Aurora Market", "content"],
   ["/definitely-not-a-page", "Page Not Found · Aurora Market", "not_found"],
   ["/product/prod-99999", "Product Not Found · Aurora Market", "product_detail"],
 ];

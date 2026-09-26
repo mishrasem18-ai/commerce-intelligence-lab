@@ -67,6 +67,11 @@ export function StoreFooter() {
             <li>
               <AnalyticsDebuggerLink />
             </li>
+            <li>
+              <Link href="/credits" className="transition-colors hover:text-foreground">
+                Image credits
+              </Link>
+            </li>
           </ul>
         </div>
       </div>

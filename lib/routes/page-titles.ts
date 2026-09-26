@@ -52,6 +52,7 @@ export const ROUTES = [
   { id: "account_order_detail", pattern: "/account/orders/[id]", area: "store", label: "Order Detail", page_type: "account" },
   { id: "account_profile", pattern: "/account/profile", area: "store", label: "Profile", page_type: "account" },
   { id: "account_addresses", pattern: "/account/addresses", area: "store", label: "Addresses", page_type: "account" },
+  { id: "credits", pattern: "/credits", area: "store", label: "Image Credits", page_type: "content" },
   // Admin
   { id: "admin_login", pattern: "/admin/login", area: "admin", label: "Sign In", page_type: "admin_login" },
   { id: "admin_dashboard", pattern: "/admin/dashboard", area: "admin", label: "Dashboard", page_type: "admin_dashboard" },
