@@ -84,6 +84,7 @@ export function CartView() {
                 <Link href={`/product/${product.id}`} className="shrink-0">
                   <ProductImage
                     src={product.image}
+                    usage="cartThumb"
                     alt={product.name}
                     category={product.category}
                     className="size-20 rounded-xl sm:size-24"

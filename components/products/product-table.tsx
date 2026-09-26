@@ -125,6 +125,7 @@ export function ProductTable({
                 <Link href={`/admin/products/${product.id}`} aria-label={`View ${product.name}`}>
                   <ProductImage
                     src={product.image}
+                    usage="thumb40"
                     alt={product.name}
                     category={product.category}
                     className="size-10 rounded-lg"

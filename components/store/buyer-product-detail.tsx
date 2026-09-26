@@ -150,7 +150,7 @@ export function BuyerProductDetail({
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <div>
-          <ProductGallery product={product} />
+          <ProductGallery product={product} usage="pdpGallery" priority />
         </div>
 
         <div className="flex flex-col gap-5">

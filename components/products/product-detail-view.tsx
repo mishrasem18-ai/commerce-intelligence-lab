@@ -94,7 +94,7 @@ export function ProductDetailView({ id, initialProduct }: ProductDetailViewProps
                 <CardTitle>Media</CardTitle>
               </CardHeader>
               <CardContent>
-                <ProductGallery product={product} />
+                <ProductGallery product={product} usage="adminGallery" />
               </CardContent>
             </Card>
             <ProductDescription product={product} />

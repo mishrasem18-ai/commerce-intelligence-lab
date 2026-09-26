@@ -120,6 +120,7 @@ export function StoreSearch({
                 >
                   <ProductImage
                     src={p.image}
+                    usage="thumb40"
                     alt={p.name}
                     category={p.category}
                     className="size-10 shrink-0 rounded-lg"

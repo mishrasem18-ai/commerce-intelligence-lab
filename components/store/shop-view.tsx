@@ -193,11 +193,14 @@ export function ShopView() {
 
       {items.length > 0 ? (
         <div className={BUYER_GRID_CLASS}>
-          {items.map((product) => (
+          {items.map((product, index) => (
             <BuyerProductCard
               key={product.id}
               product={product}
               listName={categorySelectionLabel(query.category)}
+              // The first row (4 columns on desktop, two rows on phones) is
+              // above the fold and holds the LCP image.
+              priority={index < 4}
             />
           ))}
         </div>

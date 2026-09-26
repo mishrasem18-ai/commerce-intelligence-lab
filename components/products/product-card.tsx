@@ -32,6 +32,7 @@ export function ProductCard({ product, onAction }: ProductCardProps) {
         >
           <ProductImage
             src={product.image}
+            usage="adminCard"
             alt={product.name}
             category={product.category}
             className="aspect-[4/3] w-full transition-transform duration-300 group-hover:scale-[1.03]"

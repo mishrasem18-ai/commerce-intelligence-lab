@@ -15,10 +15,13 @@ import { formatCurrency } from "@/lib/utils";
 export function BuyerProductCard({
   product,
   listName,
+  priority = false,
 }: {
   product: Product;
   /** Canonical list context for select_item/add_to_cart analytics. */
   listName?: string;
+  /** First above-the-fold row: load the image eagerly at high priority. */
+  priority?: boolean;
 }) {
   const { items, addItem } = useCart();
   const { toast } = useToast();
@@ -59,6 +62,8 @@ export function BuyerProductCard({
       >
         <ProductImage
           src={product.image}
+          usage="storeCard"
+          priority={priority}
           alt={product.name}
           category={product.category}
           className="aspect-square w-full transition-transform duration-300 group-hover:scale-[1.03]"
