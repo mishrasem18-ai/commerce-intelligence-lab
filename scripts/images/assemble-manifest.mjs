@@ -18,6 +18,8 @@
  *  - confidence is the lower of the picker's and the verifier's ratings;
  *  - anything else becomes provider "none" (the storefront shows the category
  *    placeholder) with the reason recorded;
+ *  - nouns with a picked studio render in data/product-renders.json are replaced by their
+ *    render entry (provider "render", scripts/images/render-products.mjs);
  *  - every cached original must exist, match the recorded file dimensions and
  *    the picked candidate (sidecar), and the crop must be ≥ 800 px and in
  *    bounds — otherwise the script fails.
@@ -27,6 +29,7 @@ import sharp from "sharp";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { applyRenders } from "./lib/render-entry.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const arg = (name) => {
@@ -196,6 +199,9 @@ if (books) {
     entries.push(entry);
   }
 }
+
+const RENDERS = join(root, "data/product-renders.json");
+if (existsSync(RENDERS)) entries.splice(0, entries.length, ...applyRenders(entries, JSON.parse(readFileSync(RENDERS, "utf8"))));
 
 const order = ["Electronics", "Fashion", "Home", "Sports", "Books", "Beauty", "Furniture", "Accessories", "Gaming", "Toys"];
 entries.sort((a, b) => order.indexOf(a.category) - order.indexOf(b.category) || a.noun.localeCompare(b.noun));

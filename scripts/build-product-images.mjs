@@ -4,7 +4,8 @@
  *
  * For every entry in data/product-images.json whose original is cached under
  * assets/product-source/ (re-download with `node scripts/images/fetch-sources.mjs`,
- * books re-render with `node scripts/images/render-book-covers.mjs`):
+ * books re-render with `node scripts/images/render-book-covers.mjs`, studio renders
+ * with `node scripts/images/render-products.mjs`):
  *
  *   1. apply EXIF orientation, then the manifest's 1:1 crop (file pixels);
  *   2. strip all metadata (sharp's default: no EXIF/XMP/ICC is written; pixels
@@ -82,7 +83,8 @@ async function encodeWebp(square, width) {
 async function processEntry(entry) {
   const source = join(root, entry.source_path);
   if (!existsSync(source)) {
-    return { slug: entry.slug, error: `missing original ${entry.source_path} (run scripts/images/fetch-sources.mjs)` };
+    const how = entry.provider === "render" ? "render-products.mjs" : "fetch-sources.mjs";
+    return { slug: entry.slug, error: `missing original ${entry.source_path} (run scripts/images/${how})` };
   }
   const { left, top, size } = entry.crop;
   // Decode + orient + crop once; every variant resizes from this square.

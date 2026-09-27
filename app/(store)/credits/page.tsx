@@ -32,7 +32,9 @@ export default function CreditsPage() {
         photographs of each product type, published by their creators under open licenses on
         Wikimedia Commons and Flickr, and self-hosted here. Every photo was cropped to a square
         and resized; no photo shows a real brand. Book covers are original designs for fictional
-        titles, composited onto a public-domain photo of a blank book.
+        titles, composited onto a public-domain photo of a blank book. A few product types with no
+        usable open-license photo are shown as original studio renders of a generic, unbranded
+        product, made with three.js; their scene code is in the project&rsquo;s repository.
       </p>
 
       {byCategory.map(({ category, entries }) => (
@@ -60,6 +62,30 @@ export default function CreditsPage() {
                     <p className="text-muted-foreground">
                       Illustrated placeholder — no open-license photo met our criteria.
                     </p>
+                  ) : entry.provider === "render" ? (
+                    <>
+                      <p className="text-muted-foreground">
+                        Original 3D render: {entry.creator} ·{" "}
+                        <a
+                          href={entry.origin_page_url}
+                          className="underline underline-offset-2 hover:text-foreground"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {providerLabel(entry.provider)}
+                        </a>{" "}
+                        ·{" "}
+                        <a
+                          href={entry.license_url}
+                          className="underline underline-offset-2 hover:text-foreground"
+                          target="_blank"
+                          rel="license noopener noreferrer"
+                        >
+                          {entry.license}
+                        </a>
+                      </p>
+                      <p className="text-xs text-muted-foreground">{describeModifications(entry)}</p>
+                    </>
                   ) : (
                     <>
                       {entry.composite && (

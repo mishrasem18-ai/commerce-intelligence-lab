@@ -105,7 +105,7 @@ test("manifest ↔ catalog ↔ build agree", { skip: !existsSync(MANIFEST_PATH) 
       assert.equal(slug in PRODUCT_IMAGE_ASSETS.images, false, `${slug}: placeholder entry must not be built`);
       continue;
     }
-    assert.ok(["wikimedia", "flickr"].includes(entry.provider), slug);
+    assert.ok(["wikimedia", "flickr", "render"].includes(entry.provider), slug);
     assert.ok(entry.creator && entry.license_url && entry.origin_page_url && entry.alt_text, `${slug}: incomplete credit`);
     assert.doesNotMatch(`${entry.license} ${entry.license_url}`, /\b(nc|nd)\b/i, `${slug}: NC/ND license`);
     assert.ok(entry.crop.size >= 800, `${slug}: crop below 800px`);
