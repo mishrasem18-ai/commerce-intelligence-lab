@@ -52,8 +52,8 @@ one `dataLayer.push`. Commerce events are preceded by a separate `{ecommerce: nu
 | `page_type` | `product_list` | See the appendix. |
 | `page_path` | `/shop` | The pathname with PII segments scrubbed. A segment that is or contains an email, or is a whole phone number, becomes `[redacted]` (`/account/orders/jane%40x.com` → `/account/orders/[redacted]`). Product, order and customer ids are kept. |
 | `page_location` | `https://…/shop?q=desk` | Origin + scrubbed path + scrubbed query string. **Use this instead of the tag's automatic URL.** |
-| `page_referrer` | `https://…/product/prod-1001` | The `page_location` of the previous `page_view` pushed in this page load. Until one has been pushed, it is the scrubbed browser referrer; that includes the first view after consent is accepted mid-visit. **Omitted** when neither exists. Every event carries the referrer of the page it happened on. **Use this instead of the tag's automatic referrer.** |
-| `customer_id` | `C-AB12CD` | The buyer's pseudonymous id, added once the buyer session is known (after sign-up or login, or after the session check that follows a hard load). A signed-in buyer's first `page_view` of a hard-loaded page therefore has none. Never set for admin sessions. **Not cleared at sign-out** (see below). |
+| `page_referrer` | `https://…/product/prod-1001` | The `page_location` of the previous `page_view` pushed in this page load. Until one has been pushed, it is the scrubbed browser referrer; that includes the first view after consent is accepted mid-visit. **Cleared** when neither exists. Every event carries the referrer of the page it happened on. **Use this instead of the tag's automatic referrer.** |
+| `customer_id` | `C-AB12CD` | The buyer's pseudonymous id, added once the buyer session is known (after sign-up or login, or after the session check that follows a hard load). A signed-in buyer's first `page_view` of a hard-loaded page therefore has none. Never set for admin sessions. Cleared from the first push after sign-out; the `user.logout` push itself still carries it. |
 | `ecommerce` | `{ items: [...] }` | Commerce events only. |
 | `search_term` | `desk` | `search` only. Normalised: Unicode NFKC, whitespace collapsed, trimmed, lower-case, cut to 100 characters. If the term contains an email (even a partial `jane@`) or a phone-shaped number, even percent-encoded, the whole term becomes `[redacted]`. Empty terms are never pushed. |
 | `search_results_count` | `7` | `search` only. A non-negative integer: the number of products `/shop` lists for the term. `header` and `suggestion` count store-wide, not the suggestions shown. `shop` counts across all result pages with the active category and price filters. `url` counts the loaded URL, including locally created products. |
@@ -78,15 +78,15 @@ Its `page_*` keys describe the page where the search happened:
 - **`shop`** carries `/shop`, with the typed term already in `?q=`.
 - **`url`** is pushed after the `/shop?q=…` `page_view` and carries that page.
 
-**Keys are not cleared between pushes.** Apart from the `{ecommerce: null}` reset, each push
-adds only the keys that have a value. GTM's data model lasts for the whole page, and in-app
-navigation and sign-out do not reload it, so a Data Layer Variable returns the last value
-ever pushed:
-- The four `search_*` keys keep the previous search on later `page_view` and ecommerce
-  pushes.
-- `customer_id` keeps the signed-out buyer's id on every push after a sign-out (the
-  `user.logout` push itself carries it), until the next full page load.
-- `page_referrer` is omitted, not cleared, when there is none.
+**Every event push sets every key in the table.** A key the event has no value for is pushed
+as `undefined`, which clears it in GTM's data model. The data model lasts for the whole page,
+and in-app navigation and sign-out do not reload it, but a Data Layer Variable never returns
+a value left over from an earlier push:
+- The four `search_*` keys are cleared on every push except `search`.
+- `customer_id` is cleared from the first push after sign-out.
+- `page_referrer` is cleared when there is none.
+- `ecommerce` is cleared on every non-commerce push. Commerce events are still preceded by
+  the `{ecommerce: null}` reset.
 
 ---
 
@@ -109,13 +109,9 @@ Version 2*, *Set Default Value* unchecked.
 | `DLV - search_zero_results` | `search_zero_results` |
 | `DLV - customer_id` | `customer_id` |
 
-Usage rules (because keys persist, see §0):
+Usage notes:
 
-- Use the four `DLV - search_*` variables **only** in tags fired by `CE - search`. Every
-  `search` push sets all four, but they keep their old values on every later event.
-- `DLV - customer_id` is for Tag Assistant inspection only. **Do not map it to `user_id` or
-  send it as a parameter.** The site never pushes a cleared value at sign-out, so it would
-  keep returning the previous buyer's id until the next full page load.
+- `DLV - customer_id` can be sent to GA4 as `user_id` (see *User ID* in step 3b).
 - `DLV - event_id` is optional. Add it to `GA4 - Event settings` as `event_id` if you want to
   trace a GA4 hit back to its push.
 - `ecommerce` needs no variable: GA4 ecommerce tags read it with *Send Ecommerce data →
@@ -199,6 +195,26 @@ by the Analytics category. Anything the container fires on its own triggers is g
 Consent Mode alone. That covers All Pages, clicks, timers, and Enhanced Measurement. Keep
 the GA4 tags on the `CE - …` triggers above, and switch off the Enhanced Measurement events
 listed in step 4.
+
+**User ID (optional).** Sending `customer_id` as GA4's `user_id` is safe:
+- It is an opaque, pseudonymous id, not PII. It is `C-` followed by 12 random hexadecimal
+  digits, generated at sign-up, and is not derived from the buyer's email, name or phone
+  number. None of those reach the dataLayer.
+- It is cleared from the first push after sign-out (§0), so no event after a sign-out
+  carries the previous buyer's id.
+
+To send it, open the `GA4 - Event settings` variable (step 3a) and add a row:
+
+| Parameter | Value |
+| --- | --- |
+| `user_id` | `{{DLV - customer_id}}` |
+
+Every GA4 event tag uses that variable, so each hit carries the id of the buyer who was
+signed in when it happened. Hits without a signed-in buyer carry none, because GTM leaves out
+a parameter whose variable is `undefined`. Do not put `user_id` under this Google tag's
+**Configuration settings** instead. Those are read once per page load, when the Google tag
+fires on Initialization. That is before the site knows the buyer session, and in-app sign-in
+and sign-out do not fire the tag again.
 
 ### 3c. GA4 event tag — page_view
 

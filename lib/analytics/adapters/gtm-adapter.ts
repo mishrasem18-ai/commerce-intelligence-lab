@@ -58,51 +58,56 @@ export const GA4_EVENT_NAME_MAP: Partial<Record<AnalyticsEventName, string>> = {
  * docs/ga4-gtm-changes.md) instead of the Google tag's defaults
  * (`document.location.href` / `document.referrer`), which would carry an
  * email typed into the URL.
+ *
+ * Every push carries the same top-level keys. GTM merges each push into one
+ * data model that lasts for the whole page (in-app navigation and sign-out
+ * don't reload it), so an omitted key would keep its last value. A key the
+ * event doesn't carry is therefore pushed as `undefined`, which GTM treats as
+ * "clear this key": `customer_id` after sign-out, the `search_*` keys after a
+ * search, `page_referrer` when there is none, `ecommerce` on non-commerce
+ * events.
  */
 export function mapEventToDataLayer(
   event: AnalyticsData,
   options: { origin?: string; referrer?: string | null } = {},
 ): Record<string, unknown> {
   const query = event.page.query_string ? `?${event.page.query_string}` : "";
-  const payload: Record<string, unknown> = {
+  return {
     event: GA4_EVENT_NAME_MAP[event.event_name] ?? event.event_name,
     event_id: event.event_id,
     page_type: event.page.page_type,
     page_path: event.page.path,
     page_title: event.page.title,
-    ...(options.origin ? { page_location: `${options.origin}${event.page.path}${query}` } : {}),
-    ...(options.referrer ? { page_referrer: options.referrer } : {}),
+    page_location: options.origin ? `${options.origin}${event.page.path}${query}` : undefined,
+    page_referrer: options.referrer || undefined,
+    customer_id: event.user.customer_id || undefined,
+    ecommerce: event.commerce
+      ? {
+          currency: event.commerce.currency,
+          value: event.commerce.value,
+          transaction_id: event.commerce.order_id,
+          tax: event.commerce.tax,
+          shipping: event.commerce.shipping,
+          payment_type: event.commerce.payment_method,
+          item_list_name: event.commerce.list_name,
+          items: event.commerce.items?.map((item) => ({
+            item_id: item.product_id,
+            item_name: item.name,
+            item_brand: item.brand,
+            item_category: item.category,
+            item_variant: item.variant,
+            item_list_name: item.list_name,
+            index: item.list_position,
+            price: item.price,
+            quantity: item.quantity,
+          })),
+        }
+      : undefined,
+    search_term: event.search?.query,
+    search_results_count: event.search?.results_count,
+    search_source: event.search?.search_source,
+    search_zero_results: event.search?.zero_results,
   };
-  if (event.user.customer_id) payload.customer_id = event.user.customer_id;
-  if (event.commerce) {
-    payload.ecommerce = {
-      currency: event.commerce.currency,
-      value: event.commerce.value,
-      transaction_id: event.commerce.order_id,
-      tax: event.commerce.tax,
-      shipping: event.commerce.shipping,
-      payment_type: event.commerce.payment_method,
-      item_list_name: event.commerce.list_name,
-      items: event.commerce.items?.map((item) => ({
-        item_id: item.product_id,
-        item_name: item.name,
-        item_brand: item.brand,
-        item_category: item.category,
-        item_variant: item.variant,
-        item_list_name: item.list_name,
-        index: item.list_position,
-        price: item.price,
-        quantity: item.quantity,
-      })),
-    };
-  }
-  if (event.search) {
-    payload.search_term = event.search.query;
-    payload.search_results_count = event.search.results_count;
-    payload.search_source = event.search.search_source;
-    payload.search_zero_results = event.search.zero_results;
-  }
-  return payload;
 }
 
 /**

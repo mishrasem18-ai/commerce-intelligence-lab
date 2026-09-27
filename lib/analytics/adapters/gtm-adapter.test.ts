@@ -18,6 +18,7 @@ import {
 import { createAnalytics } from "../analytics.ts";
 import { createConsentStore } from "../consent.ts";
 import type { AnalyticsData } from "../schema.ts";
+import { gtmDataModel } from "../../../test/gtm-data-model.mjs";
 
 const FAKE_ID = "GTM-TEST123"; // test fixture only — not a real container
 
@@ -309,9 +310,10 @@ test("page_location is rebuilt from the scrubbed path + query, never the raw URL
   assert.ok(!JSON.stringify(win.dataLayer).includes("jane"));
 });
 
-test("page_location is omitted when no origin is known (pure mapping)", () => {
+test("page_location is cleared when no origin is known (pure mapping)", () => {
   const mapped = mapEventToDataLayer(makeEvent());
-  assert.equal("page_location" in mapped, false);
+  assert.equal("page_location" in mapped, true);
+  assert.equal(mapped.page_location, undefined);
   const withOrigin = mapEventToDataLayer(
     makeEvent({ page: { path: "/shop", title: "Shop · Aurora Market", page_type: "product_list", query_string: "category=home" } }),
     { origin: "https://aurora.example" },
@@ -339,11 +341,12 @@ test("page_referrer is scrubbed: document referrer first, then the previous page
   service.track("page.view");
 
   const pushes = (win.dataLayer ?? []).filter(
-    (e) => typeof e === "object" && e !== null && "page_referrer" in (e as object),
+    (e) => typeof e === "object" && e !== null && "event_id" in (e as object),
   ) as Array<Record<string, unknown>>;
   assert.deepEqual(
     pushes.map((p) => [p.event, p.page_referrer]),
     [
+      ["consent.update", undefined], // before the first page view: none yet
       ["page_view", "https://aurora.example/shop?q=[redacted]&category=home"],
       ["view_item", "https://aurora.example/shop?q=[redacted]&category=home"],
       ["page_view", "https://aurora.example/product/prod-1"],
@@ -352,8 +355,13 @@ test("page_referrer is scrubbed: document referrer first, then the previous page
   assert.ok(!JSON.stringify(win.dataLayer).includes("jane"));
 });
 
-test("no page_referrer is invented when the browser has none", () => {
-  const win: GtmWindow = { location: { origin: "https://aurora.example" }, document: { referrer: "" } };
+test("page_referrer is cleared, not invented, when the browser has none", () => {
+  const win: GtmWindow = {
+    location: { origin: "https://aurora.example" },
+    document: { referrer: "" },
+    // Stands in for any earlier value in GTM's data model.
+    dataLayer: [{ page_referrer: "https://stale.example/" }],
+  };
   const adapter = createGtmAdapter({ containerId: FAKE_ID, win, injectScript: () => {} });
   const service = createAnalytics({
     adapters: [adapter],
@@ -364,5 +372,144 @@ test("no page_referrer is invented when the browser has none", () => {
   service.updateConsent("accept_all");
   service.track("page.view");
   const view = (win.dataLayer ?? []).find((e) => (e as Record<string, unknown>).event === "page_view") as Record<string, unknown>;
-  assert.equal("page_referrer" in view, false);
+  assert.equal("page_referrer" in view, true);
+  assert.equal(view.page_referrer, undefined);
+  assert.equal(gtmDataModel(win.dataLayer ?? []).page_referrer, undefined);
+});
+
+/* -------------------------------------------------------------------------- */
+/*  Stale keys: every push clears the keys its event doesn't carry           */
+/* -------------------------------------------------------------------------- */
+
+const OPTIONAL_KEYS = [
+  "page_location",
+  "page_referrer",
+  "customer_id",
+  "ecommerce",
+  "search_term",
+  "search_results_count",
+  "search_source",
+  "search_zero_results",
+];
+const SEARCH_KEYS = OPTIONAL_KEYS.filter((key) => key.startsWith("search_"));
+
+/** The full pipeline with consent granted; `pushes()` lists the mapped events. */
+function pipelineHarness() {
+  const win: GtmWindow = { location: { origin: "https://aurora.example" }, document: { referrer: "" } };
+  const adapter = createGtmAdapter({ containerId: FAKE_ID, win, injectScript: () => {} });
+  let page = { path: "/", title: "Home · Aurora Market", page_type: "home" as const, query_string: "" };
+  const service = createAnalytics({
+    adapters: [adapter],
+    consentStore: createConsentStore(null),
+    environment: "test",
+    getPageContext: () => page,
+  });
+  service.updateConsent("accept_all");
+  return {
+    win,
+    service,
+    navigate: (next: typeof page) => {
+      page = next;
+    },
+    pushes: () =>
+      (win.dataLayer ?? []).filter(
+        (e) => typeof e === "object" && e !== null && "event_id" in (e as object),
+      ) as Array<Record<string, unknown>>,
+    model: () => gtmDataModel(win.dataLayer ?? []),
+  };
+}
+
+test("every push carries every key; the ones its event lacks are undefined", () => {
+  const options = { origin: "https://aurora.example", referrer: "https://aurora.example/" };
+  const bare = mapEventToDataLayer(makeEvent({ event_name: "page.view", commerce: undefined }));
+  const mapped = [
+    bare,
+    mapEventToDataLayer(
+      makeEvent({ user: { authentication_state: "authenticated", customer_id: "C-AB12CD" } }),
+      options,
+    ),
+    mapEventToDataLayer(
+      makeEvent({
+        event_name: "search.submit",
+        commerce: undefined,
+        search: { query: "qqqzzz", results_count: 0, search_source: "shop", zero_results: true },
+      }),
+      options,
+    ),
+    mapEventToDataLayer(makeEvent({ event_name: "user.logout", commerce: undefined }), options),
+  ];
+  const keys = Object.keys(bare).sort();
+  assert.deepEqual(
+    keys,
+    ["event", "event_id", "page_path", "page_title", "page_type", ...OPTIONAL_KEYS].sort(),
+  );
+  for (const payload of mapped) assert.deepEqual(Object.keys(payload).sort(), keys);
+  for (const key of OPTIONAL_KEYS) assert.equal(bare[key], undefined, key);
+  // A falsy value is a value, not a missing one.
+  assert.equal(mapped[2].search_results_count, 0);
+});
+
+test("customer_id is cleared on the first push after sign-out", () => {
+  const { service, pushes, model } = pipelineHarness();
+  service.setUserContext({ authentication_state: "authenticated", customer_id: "C-AB12CD" });
+  service.track("page.view");
+  // The auth store's order: track the logout while the id is set, then reset.
+  service.track("user.logout");
+  service.setUserContext({ authentication_state: "guest" });
+  assert.equal(model().customer_id, "C-AB12CD");
+  service.track("page.view");
+
+  const [, signedIn, logout, next] = pushes();
+  assert.deepEqual([signedIn.event, logout.event, next.event], ["page_view", "user.logout", "page_view"]);
+  assert.equal(signedIn.customer_id, "C-AB12CD");
+  assert.equal(logout.customer_id, "C-AB12CD");
+  assert.equal("customer_id" in next, true);
+  assert.equal(next.customer_id, undefined);
+  assert.equal(model().customer_id, undefined);
+});
+
+test("the search keys are cleared on the next push after a search", () => {
+  const { service, navigate, pushes, model } = pipelineHarness();
+  service.track("search.submit", {
+    search: { query: "desk", results_count: 7, search_source: "header", zero_results: false },
+  });
+  assert.deepEqual(
+    SEARCH_KEYS.map((key) => model()[key]),
+    ["desk", 7, "header", false],
+  );
+  navigate({ path: "/shop", title: "Shop · Aurora Market", page_type: "product_list", query_string: "q=desk" });
+  service.track("page.view");
+  service.track("commerce.view_item_list", { commerce: { currency: "USD", items: [] } });
+
+  const [, search, view, list] = pushes();
+  assert.deepEqual([search.event, view.event, list.event], ["search", "page_view", "view_item_list"]);
+  for (const push of [view, list]) {
+    for (const key of SEARCH_KEYS) {
+      assert.equal(key in push, true, `${push.event} ${key}`);
+      assert.equal(push[key], undefined, `${push.event} ${key}`);
+    }
+  }
+  for (const key of SEARCH_KEYS) assert.equal(model()[key], undefined, key);
+});
+
+test("ecommerce is cleared on non-commerce pushes; commerce pushes keep the null reset", () => {
+  const { win, service, pushes, model } = pipelineHarness();
+  service.track("commerce.add_to_cart", {
+    commerce: makeEvent().commerce!,
+  });
+  service.track("page.view");
+
+  const dl = win.dataLayer ?? [];
+  const addIndex = dl.findIndex((e) => (e as Record<string, unknown>).event === "add_to_cart");
+  assert.deepEqual(dl[addIndex - 1], { ecommerce: null });
+  assert.equal(
+    dl.filter((e) => typeof e === "object" && e !== null && (e as Record<string, unknown>).ecommerce === null).length,
+    1,
+    "only the commerce event gets a null reset",
+  );
+  const view = pushes().at(-1)!;
+  assert.equal(view.event, "page_view");
+  assert.equal("ecommerce" in view, true);
+  assert.equal(view.ecommerce, undefined);
+  assert.equal(model().ecommerce, undefined);
 });

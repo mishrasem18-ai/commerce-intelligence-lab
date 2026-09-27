@@ -64,18 +64,17 @@ export async function signInAdmin(context: BrowserContext, baseURL: string): Pro
 }
 
 /** Create (and sign in) a throwaway buyer; the session cookie lands in the context. */
-export async function signUpBuyer(context: BrowserContext, baseURL: string): Promise<void> {
+export async function signUpBuyer(
+  context: BrowserContext,
+  baseURL: string,
+): Promise<{ email: string; password: string }> {
   const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const credentials = { email: `e2e-${stamp}@example.test`, password: "e2e-password-123" };
   const res = await context.request.post(`${baseURL}/api/auth/register`, {
-    data: {
-      firstName: "E2E",
-      lastName: "Buyer",
-      email: `e2e-${stamp}@example.test`,
-      mobile: "",
-      password: "e2e-password-123",
-    },
+    data: { firstName: "E2E", lastName: "Buyer", mobile: "", ...credentials },
   });
   expect(res.ok(), await res.text()).toBeTruthy();
+  return credentials;
 }
 
 export const test = base.extend<{ consented: void }>({
