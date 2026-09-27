@@ -1,0 +1,599 @@
+{
+  "samples": 64,
+  "renders": [
+    {
+      "noun": "Hair Oil",
+      "slug": "hair-oil",
+      "seed": 4,
+      "alt_text": "Amber glass hair oil bottle with a gold collar and black dropper, part-filled with golden oil, on a light grey background",
+      "confidence": "medium",
+      "confidence_reason": "Original render: amber Boston-round bottle with a gold collar and black rubber dropper, part-filled with golden oil; no text or marks. A dropper bottle could also read as a serum, so medium.",
+      "candidates": [
+        {
+          "seed": 1,
+          "samples": 64,
+          "variant": "clear glass, golden oil, black dropper",
+          "camera": {
+            "azimuth": 30.39,
+            "elevation": 12,
+            "fov": 26
+          },
+          "verdict": "rejected: oil in clear glass reads as opaque juice"
+        },
+        {
+          "seed": 2,
+          "samples": 64,
+          "variant": "amber glass, black dropper",
+          "camera": {
+            "azimuth": 30.63,
+            "elevation": 12,
+            "fov": 26
+          },
+          "verdict": "acceptable (amber, black collar); seed 4 reads more premium"
+        },
+        {
+          "seed": 3,
+          "samples": 64,
+          "variant": "clear glass, golden oil, gold pump",
+          "camera": {
+            "azimuth": 23.61,
+            "elevation": 12,
+            "fov": 26
+          },
+          "verdict": "rejected: pump head reads as a malformed white stub; oil looks opaque"
+        },
+        {
+          "seed": 4,
+          "samples": 64,
+          "variant": "amber glass, gold collar, black bulb",
+          "camera": {
+            "azimuth": 24.12,
+            "elevation": 12,
+            "fov": 26
+          },
+          "verdict": "picked"
+        }
+      ]
+    },
+    {
+      "noun": "Eye Serum",
+      "slug": "eye-serum",
+      "seed": 2,
+      "alt_text": "Slim clear-glass eye serum roll-on bottle with blush serum and a rose-gold roller ball, cap beside it, on a light grey background",
+      "confidence": "medium",
+      "confidence_reason": "Original render: slim clear-glass roll-on with blush serum, rose-gold roller ball and its cap beside it; no text or marks. A roll-on could also be a perfume oil, so medium.",
+      "candidates": [
+        {
+          "seed": 1,
+          "samples": 64,
+          "variant": "white opal glass, silver roller",
+          "camera": {
+            "azimuth": 28.31,
+            "elevation": 14,
+            "fov": 26
+          },
+          "verdict": "acceptable but the white bottle hides the serum"
+        },
+        {
+          "seed": 2,
+          "samples": 64,
+          "variant": "clear glass, blush serum, rose-gold roller",
+          "camera": {
+            "azimuth": 30.87,
+            "elevation": 14,
+            "fov": 26
+          },
+          "verdict": "picked"
+        },
+        {
+          "seed": 3,
+          "samples": 64,
+          "variant": "lavender frosted glass, silver roller",
+          "camera": {
+            "azimuth": 22.89,
+            "elevation": 14,
+            "fov": 26
+          },
+          "verdict": "acceptable; lavender reads less cosmetic"
+        },
+        {
+          "seed": 4,
+          "samples": 64,
+          "variant": "white airless pump, silver collar",
+          "camera": {
+            "azimuth": 35.96,
+            "elevation": 14,
+            "fov": 26
+          },
+          "verdict": "rejected: airless pump reads as a generic white tube"
+        }
+      ]
+    },
+    {
+      "noun": "Night Cream",
+      "slug": "night-cream",
+      "seed": 2,
+      "alt_text": "Open plum frosted-glass night cream jar with its gold screw lid beside it, on a light grey background",
+      "confidence": "high",
+      "confidence_reason": "Original render: open plum frosted-glass cream jar showing the cream, gold screw lid beside it; no text or marks. Replaces the antique ointment pot.",
+      "candidates": [
+        {
+          "seed": 1,
+          "samples": 64,
+          "variant": "navy frosted glass, silver lid, closed",
+          "camera": {
+            "azimuth": 30.31,
+            "elevation": 20,
+            "fov": 26
+          },
+          "verdict": "acceptable (closed jar); the open jar shows the cream"
+        },
+        {
+          "seed": 2,
+          "samples": 64,
+          "variant": "plum frosted glass, gold lid, open with lid beside",
+          "camera": {
+            "azimuth": 30.51,
+            "elevation": 30,
+            "fov": 26
+          },
+          "verdict": "picked"
+        },
+        {
+          "seed": 3,
+          "samples": 64,
+          "variant": "white opal glass, white lid, closed",
+          "camera": {
+            "azimuth": 29.76,
+            "elevation": 20,
+            "fov": 26
+          },
+          "verdict": "rejected: closed white jar reads as a generic tub"
+        },
+        {
+          "seed": 4,
+          "samples": 64,
+          "variant": "forest frosted glass, black lid, open with lid beside",
+          "camera": {
+            "azimuth": 25.3,
+            "elevation": 30,
+            "fov": 26
+          },
+          "verdict": "acceptable; flatter cream surface"
+        }
+      ]
+    },
+    {
+      "noun": "Sunscreen SPF 50",
+      "slug": "sunscreen-spf-50",
+      "seed": 2,
+      "alt_text": "Yellow sunscreen squeeze tube standing on a white flip-top cap beside a dollop of lotion, on a light grey background",
+      "confidence": "medium",
+      "confidence_reason": "Original render: plain yellow squeeze tube standing on a white flip-top cap beside a dollop of lotion; no text. With no label any lotion tube could be sunscreen, so medium.",
+      "candidates": [
+        {
+          "seed": 1,
+          "samples": 64,
+          "variant": "white tube, orange cap",
+          "camera": {
+            "azimuth": 30.23,
+            "elevation": 14,
+            "fov": 26
+          },
+          "verdict": "acceptable; no lotion cue"
+        },
+        {
+          "seed": 2,
+          "samples": 64,
+          "variant": "sun-yellow tube, white cap, lotion dollop",
+          "camera": {
+            "azimuth": 30.38,
+            "elevation": 14,
+            "fov": 26
+          },
+          "verdict": "picked"
+        },
+        {
+          "seed": 3,
+          "samples": 64,
+          "variant": "sky-blue tube, white cap",
+          "camera": {
+            "azimuth": 29.82,
+            "elevation": 14,
+            "fov": 26
+          },
+          "verdict": "acceptable; blue reads less sun-care"
+        },
+        {
+          "seed": 4,
+          "samples": 64,
+          "variant": "coral tube, white cap, lotion dollop",
+          "camera": {
+            "azimuth": 26.47,
+            "elevation": 14,
+            "fov": 26
+          },
+          "verdict": "acceptable; coral reads less sun-care"
+        }
+      ]
+    },
+    {
+      "noun": "Portable SSD",
+      "slug": "portable-ssd",
+      "seed": 1,
+      "alt_text": "Pocket-size space-grey aluminium portable SSD with a USB-C cable on a light grey background",
+      "confidence": "medium",
+      "confidence_reason": "Original render: pocket-size space-grey aluminium drive with a USB-C port, activity LED and a short USB-C cable; no text or logo. Without a label it could also be a power bank, so medium.",
+      "candidates": [
+        {
+          "seed": 1,
+          "samples": 64,
+          "variant": "space-grey aluminium, USB-C cable",
+          "camera": {
+            "azimuth": 34.67,
+            "elevation": 32,
+            "fov": 26
+          },
+          "verdict": "picked"
+        },
+        {
+          "seed": 2,
+          "samples": 64,
+          "variant": "deep-blue aluminium, USB-C cable",
+          "camera": {
+            "azimuth": 32.15,
+            "elevation": 32,
+            "fov": 26
+          },
+          "verdict": "acceptable; drive small in frame"
+        },
+        {
+          "seed": 3,
+          "samples": 64,
+          "variant": "black with orange rugged bumper, USB-C cable",
+          "camera": {
+            "azimuth": 29.82,
+            "elevation": 32,
+            "fov": 26
+          },
+          "verdict": "acceptable (rugged bumper); reads more like a power bank"
+        },
+        {
+          "seed": 4,
+          "samples": 64,
+          "variant": "silver aluminium",
+          "camera": {
+            "azimuth": 26.91,
+            "elevation": 32,
+            "fov": 26
+          },
+          "verdict": "rejected: no cable, reads as a generic slab"
+        }
+      ]
+    },
+    {
+      "noun": "Bluetooth Tracker",
+      "slug": "bluetooth-tracker",
+      "seed": 4,
+      "alt_text": "White rounded-square Bluetooth tracker tag with a graphite rim on a steel key ring, on a light grey background",
+      "confidence": "medium",
+      "confidence_reason": "Original render: white rounded-square tag with a graphite rim on a steel split key ring; no text or logo. A plain tag is the generic key-finder shape but not unmistakable, so medium.",
+      "candidates": [
+        {
+          "seed": 1,
+          "samples": 64,
+          "variant": "white rounded-square tag, steel key ring",
+          "camera": {
+            "azimuth": 27.95,
+            "elevation": 34,
+            "fov": 26
+          },
+          "verdict": "acceptable; white-on-grey has low contrast"
+        },
+        {
+          "seed": 2,
+          "samples": 64,
+          "variant": "graphite rounded-square tag, steel key ring",
+          "camera": {
+            "azimuth": 36.03,
+            "elevation": 34,
+            "fov": 26
+          },
+          "verdict": "acceptable"
+        },
+        {
+          "seed": 3,
+          "samples": 64,
+          "variant": "sage-green round tag with tab, steel key ring",
+          "camera": {
+            "azimuth": 31.41,
+            "elevation": 34,
+            "fov": 26
+          },
+          "verdict": "rejected: round disc reads as a soap or macaron"
+        },
+        {
+          "seed": 4,
+          "samples": 64,
+          "variant": "white rounded-square tag with graphite rim, steel key ring",
+          "camera": {
+            "azimuth": 39.96,
+            "elevation": 34,
+            "fov": 26
+          },
+          "verdict": "picked"
+        }
+      ]
+    },
+    {
+      "noun": "Capture Card",
+      "slug": "capture-card",
+      "seed": 2,
+      "alt_text": "Compact white external video capture card with HDMI in and out ports and HDMI cables plugged in, on a light grey background",
+      "confidence": "medium",
+      "confidence_reason": "Original render: compact white capture box with HDMI in and out (both cables plugged in), USB-C and a light bar; no text or logo. An unlabelled HDMI box could also be a switch, so medium.",
+      "candidates": [
+        {
+          "seed": 1,
+          "samples": 64,
+          "variant": "matte black, white light bar, one HDMI cable",
+          "camera": {
+            "azimuth": 24.23,
+            "elevation": 30,
+            "fov": 26
+          },
+          "verdict": "acceptable; one cable"
+        },
+        {
+          "seed": 2,
+          "samples": 64,
+          "variant": "white, blue light bar, two HDMI cables",
+          "camera": {
+            "azimuth": 24.38,
+            "elevation": 30,
+            "fov": 26
+          },
+          "verdict": "picked"
+        },
+        {
+          "seed": 3,
+          "samples": 64,
+          "variant": "gunmetal, violet light bar, no cable",
+          "camera": {
+            "azimuth": 23.82,
+            "elevation": 30,
+            "fov": 26
+          },
+          "verdict": "rejected: with no cables it reads as a router"
+        },
+        {
+          "seed": 4,
+          "samples": 64,
+          "variant": "matte black, cyan light bar, two HDMI cables",
+          "camera": {
+            "azimuth": 20.47,
+            "elevation": 30,
+            "fov": 26
+          },
+          "verdict": "acceptable"
+        }
+      ]
+    },
+    {
+      "noun": "Console Stand",
+      "slug": "console-stand",
+      "seed": 1,
+      "alt_text": "Black vertical console stand holding a plain white slim console upright, with two controller charging docks, on a light grey background",
+      "confidence": "high",
+      "confidence_reason": "Original render: black vertical stand holding a plain, unbranded white slim console, with two controller charging docks and LEDs; no text or logo, and no real console's design.",
+      "candidates": [
+        {
+          "seed": 1,
+          "samples": 64,
+          "variant": "black stand, white console",
+          "camera": {
+            "azimuth": 34.67,
+            "elevation": 20,
+            "fov": 26
+          },
+          "verdict": "picked"
+        },
+        {
+          "seed": 2,
+          "samples": 64,
+          "variant": "white stand, white console",
+          "camera": {
+            "azimuth": 32.15,
+            "elevation": 20,
+            "fov": 26
+          },
+          "verdict": "acceptable; white on grey has low contrast"
+        },
+        {
+          "seed": 3,
+          "samples": 64,
+          "variant": "black stand, black console",
+          "camera": {
+            "azimuth": 26.17,
+            "elevation": 20,
+            "fov": 26
+          },
+          "verdict": "acceptable"
+        },
+        {
+          "seed": 4,
+          "samples": 64,
+          "variant": "graphite stand, light-grey console",
+          "camera": {
+            "azimuth": 26.91,
+            "elevation": 20,
+            "fov": 26
+          },
+          "verdict": "acceptable"
+        }
+      ]
+    },
+    {
+      "noun": "RGB Mousepad",
+      "slug": "rgb-mousepad",
+      "seed": 1,
+      "alt_text": "Black cloth RGB gaming mouse pad with a glowing rainbow light strip around the edge, on a light grey background",
+      "confidence": "high",
+      "confidence_reason": "Original render: black cloth gaming mouse pad with a glowing rainbow RGB edge strip and a USB controller block with cable; no text or logo.",
+      "candidates": [
+        {
+          "seed": 1,
+          "samples": 64,
+          "variant": "square pad, rainbow edge",
+          "camera": {
+            "azimuth": 21.51,
+            "elevation": 38,
+            "fov": 26
+          },
+          "verdict": "picked"
+        },
+        {
+          "seed": 2,
+          "samples": 64,
+          "variant": "extended desk mat, rainbow edge",
+          "camera": {
+            "azimuth": 22.55,
+            "elevation": 30,
+            "fov": 26
+          },
+          "verdict": "acceptable (desk mat); small in frame"
+        },
+        {
+          "seed": 3,
+          "samples": 64,
+          "variant": "square pad, cyan-to-magenta edge",
+          "camera": {
+            "azimuth": 20.86,
+            "elevation": 38,
+            "fov": 26
+          },
+          "verdict": "acceptable; two-colour edge reads less RGB"
+        },
+        {
+          "seed": 4,
+          "samples": 64,
+          "variant": "medium pad, rainbow edge",
+          "camera": {
+            "azimuth": 25.11,
+            "elevation": 38,
+            "fov": 26
+          },
+          "verdict": "acceptable"
+        }
+      ]
+    },
+    {
+      "noun": "Laptop Sleeve",
+      "slug": "laptop-sleeve",
+      "seed": 2,
+      "alt_text": "Navy wool-felt laptop sleeve with a fold-over flap and leather strap, lying flat on a light grey background",
+      "confidence": "medium",
+      "confidence_reason": "Original render: navy wool-felt envelope sleeve with a fold-over flap, brown leather strap and stud, lying flat; no text or logo. With no laptop shown it could also read as a document folio, so medium.",
+      "candidates": [
+        {
+          "seed": 1,
+          "samples": 64,
+          "variant": "grey wool felt envelope, tan leather strap",
+          "camera": {
+            "azimuth": 26.43,
+            "elevation": 36,
+            "fov": 26
+          },
+          "verdict": "acceptable; pale felt is blotchy"
+        },
+        {
+          "seed": 2,
+          "samples": 64,
+          "variant": "navy wool felt envelope, brown leather strap",
+          "camera": {
+            "azimuth": 22.47,
+            "elevation": 36,
+            "fov": 26
+          },
+          "verdict": "picked"
+        },
+        {
+          "seed": 3,
+          "samples": 64,
+          "variant": "charcoal neoprene, two-side zip",
+          "camera": {
+            "azimuth": 23.82,
+            "elevation": 36,
+            "fov": 26
+          },
+          "verdict": "rejected: the zip pull floats off the edge"
+        },
+        {
+          "seed": 4,
+          "samples": 64,
+          "variant": "oatmeal wool felt envelope, black leather strap",
+          "camera": {
+            "azimuth": 28.62,
+            "elevation": 36,
+            "fov": 26
+          },
+          "verdict": "acceptable; oatmeal on grey has low contrast"
+        }
+      ]
+    },
+    {
+      "noun": "Art Set",
+      "slug": "art-set",
+      "seed": 2,
+      "alt_text": "Open walnut art set case with coloured pencils, oil pastels, watercolour pans, brushes, paint tubes and a mixing palette, on a light grey background",
+      "confidence": "high",
+      "confidence_reason": "Original render: open walnut case with coloured pencils, oil pastels, watercolour pans, brushes, paint tubes and a mixing palette; no text or maker marks.",
+      "candidates": [
+        {
+          "seed": 1,
+          "samples": 64,
+          "variant": "beech case, lid 102\u00b0",
+          "camera": {
+            "azimuth": 18.96,
+            "elevation": 42,
+            "fov": 26
+          },
+          "verdict": "acceptable (beech); lower contrast than walnut"
+        },
+        {
+          "seed": 2,
+          "samples": 64,
+          "variant": "walnut case, lid 103\u00b0",
+          "camera": {
+            "azimuth": 25.02,
+            "elevation": 42,
+            "fov": 26
+          },
+          "verdict": "picked"
+        },
+        {
+          "seed": 3,
+          "samples": 64,
+          "variant": "white-oak case, lid 100\u00b0",
+          "camera": {
+            "azimuth": 21.56,
+            "elevation": 42,
+            "fov": 26
+          },
+          "verdict": "acceptable"
+        },
+        {
+          "seed": 4,
+          "samples": 64,
+          "variant": "beech case, deeper lid angle, lid 112\u00b0",
+          "camera": {
+            "azimuth": 25.11,
+            "elevation": 42,
+            "fov": 26
+          },
+          "verdict": "acceptable"
+        }
+      ]
+    }
+  ]
+}

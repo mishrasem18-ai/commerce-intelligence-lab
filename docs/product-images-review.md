@@ -5,23 +5,48 @@ for the crops. Every pick passed the hard rules (exact item type, clear subject,
 no readable logos/text, no watermark, ≥ 800 px 1:1 crop) and its license was re-read at the
 origin page. Confidence is the lower of the picker's and the independent reviewer's rating.
 
-Totals: 102 nouns — high 45, medium 41, low 9, category placeholder 7.
+Totals: 102 nouns — high 49, medium 48, low 4, category placeholder 1. That includes 11 studio renders
+(4 high, 7 medium), which replaced 6 of the 7 category placeholders and 5 of the 9 low-confidence photos.
+Originally: high 45, medium 41, low 9, placeholder 7.
 
 Background normalisation (C4, rembg) was not applied: busy backgrounds are a minority and the
 brief allows it only where edges come out clean, so every entry records `bg_normalised: false`.
 
-## Low confidence (9)
+## Studio renders (11)
+
+Original packshots of generic, unbranded products, rendered locally with three.js in headless
+Chromium (`scripts/images/render-products.mjs`; no photo, API or account). Each noun got 4
+candidates (seeds 1–4, 64 samples, 1024²). Every candidate was checked on a 256px thumbnail for:
+exact item type, no text or lettering, no logo-like marks, no shape artefacts, and reading as a
+real product photo. The verdict for each seed is in `data/product-renders.json`. No noun needed a
+regeneration round.
+
+| Noun | Category | Replaces | Confidence | Why | Source |
+| --- | --- | --- | --- | --- | --- |
+| Hair Oil | Beauty | low photo (antique Roman flask) | medium | Original render: amber Boston-round bottle with a gold collar and black rubber dropper, part-filled with golden oil; no text or marks. A dropper bottle could also read as a serum, so medium. | [scene](../scripts/images/render/products/hair-oil.js), seed 4 |
+| Eye Serum | Beauty | placeholder | medium | Original render: slim clear-glass roll-on with blush serum, rose-gold roller ball and its cap beside it; no text or marks. A roll-on could also be a perfume oil, so medium. | [scene](../scripts/images/render/products/eye-serum.js), seed 2 |
+| Night Cream | Beauty | low photo (antique ointment pot) | high | Original render: open plum frosted-glass cream jar showing the cream, gold screw lid beside it; no text or marks. Replaces the antique ointment pot. | [scene](../scripts/images/render/products/night-cream.js), seed 2 |
+| Sunscreen SPF 50 | Beauty | placeholder | medium | Original render: plain yellow squeeze tube standing on a white flip-top cap beside a dollop of lotion; no text. With no label any lotion tube could be sunscreen, so medium. | [scene](../scripts/images/render/products/sunscreen-spf-50.js), seed 2 |
+| Portable SSD | Electronics | placeholder | medium | Original render: pocket-size space-grey aluminium drive with a USB-C port, activity LED and a short USB-C cable; no text or logo. Without a label it could also be a power bank, so medium. | [scene](../scripts/images/render/products/portable-ssd.js), seed 1 |
+| Bluetooth Tracker | Electronics | placeholder | medium | Original render: white rounded-square tag with a graphite rim on a steel split key ring; no text or logo. A plain tag is the generic key-finder shape but not unmistakable, so medium. | [scene](../scripts/images/render/products/bluetooth-tracker.js), seed 4 |
+| Capture Card | Gaming | low photo (partial AV box) | medium | Original render: compact white capture box with HDMI in and out (both cables plugged in), USB-C and a light bar; no text or logo. An unlabelled HDMI box could also be a switch, so medium. | [scene](../scripts/images/render/products/capture-card.js), seed 2 |
+| Console Stand | Gaming | low photo (cropped console) | high | Original render: black vertical stand holding a plain, unbranded white slim console, with two controller charging docks and LEDs; no text or logo, and no real console's design. | [scene](../scripts/images/render/products/console-stand.js), seed 1 |
+| RGB Mousepad | Gaming | low photo (no RGB, mouse dominates) | high | Original render: black cloth gaming mouse pad with a glowing rainbow RGB edge strip and a USB controller block with cable; no text or logo. | [scene](../scripts/images/render/products/rgb-mousepad.js), seed 1 |
+| Laptop Sleeve | Accessories | placeholder | medium | Original render: navy wool-felt envelope sleeve with a fold-over flap, brown leather strap and stud, lying flat; no text or logo. With no laptop shown it could also read as a document folio, so medium. | [scene](../scripts/images/render/products/laptop-sleeve.js), seed 2 |
+| Art Set | Toys | placeholder | high | Original render: open walnut case with coloured pencils, oil pastels, watercolour pans, brushes, paint tubes and a mixing palette; no text or maker marks. | [scene](../scripts/images/render/products/art-set.js), seed 2 |
+
+Not rendered, and still open: Compression Tee, Training Gloves, Bed Frame, Play Tent, Racing
+Wheel and Headset. Garments, gloves and soft furnishings need cloth simulation or sculpting that
+this geometric toolkit can't make convincing. The racing wheel and the headset are sculpted forms
+where a crude model would read as a toy.
+
+## Low confidence (4)
 
 | Noun | Category | Why | Source |
 | --- | --- | --- | --- |
 | Compression Tee | Sports | Plain blank white tee on a hanger on white, no text; a basic cotton tee, not a compression/athletic top. | [origin](https://commons.wikimedia.org/wiki/File:Ringflash_Tshirt_Blank_Template_(3214240974).jpg) |
 | Training Gloves | Sports | Rules met (no people/logos, PD), but these are vintage lace-up boxing gloves in a tight, partial close-up rather than gym training gloves. | [origin](https://commons.wikimedia.org/wiki/File:Black_boxing_gloves.jpg) |
-| Hair Oil | Beauty | Unlabelled small glass bottle on plain grey; antique Roman glass that reads as a perfume flask. | [origin](https://commons.wikimedia.org/wiki/File:Green_glass_dropper_bottle,_Roman,_100-500_CE_Wellcome_L0058041.jpg) |
-| Night Cream | Beauty | Unlabelled antique ointment pot on a plain background; reads as a ceramic pot rather than a cream jar. | [origin](https://commons.wikimedia.org/wiki/File:Zalfpot,_collectie_Raakvlak,_BR90-WI-1-55-10.jpg) |
 | Bed Frame | Furniture | Bare folding frame on white, no readable text; a worn canvas field cot (museum model) rather than a modern bed frame, head end cut. | [origin](https://commons.wikimedia.org/wiki/File:Model_of_a_field_hospital_bed,_England,_1914-1918_Wellcome_L0058343.jpg) |
-| Capture Card | Gaming | Back panel of a video capture box with generic port labels only; partial enclosure, reads as a generic AV box. | [origin](https://commons.wikimedia.org/wiki/File:2453_IP_video_server.jpg) |
-| Console Stand | Gaming | Vertical stand holding the lower part of a console on white, no text; reads abstractly because the console is cropped below its wordmark. | [origin](https://commons.wikimedia.org/wiki/File:PS2-Fat-Console-Vert.jpg) |
-| RGB Mousepad | Gaming | Plain mouse pad with wrist rest, no text; no RGB lighting and the mouse dominates the frame, wood desk. | [origin](https://commons.wikimedia.org/wiki/File:Test_foto.jpg) |
 | Play Tent | Toys | Whole pop-up play tent, no people or readable text; a dog's head in the foreground and a cluttered living room. | [origin](https://commons.wikimedia.org/wiki/File:Circo_Play_Tent.jpg) |
 
 ## Medium confidence (41)
@@ -70,14 +95,8 @@ brief allows it only where edges come out clean, so every entry records `bg_norm
 | RC Car | Toys | Whole RC car on a plain backdrop, no readable decals; stunt-car stance with a small add-on board and antenna. | [origin](https://commons.wikimedia.org/wiki/File:RC_BIT_1.JPG) |
 | Wooden Blocks | Toys | Wooden alphabet block with single decorative letters on a plain backdrop; one block rather than a set. | [origin](https://commons.wikimedia.org/wiki/File:Blocks,_alphabet_(AM_1990.255-1).jpg) |
 
-## Category placeholder — no acceptable photo (7)
+## Category placeholder — no acceptable photo (1)
 
 | Noun | Category | Why |
 | --- | --- | --- |
-| Bluetooth Tracker | Electronics | no acceptable open-license photo found (Session 2 re-pick: 3 new Commons searches (296 candidates total) plus a second look at 8 leftovers; every current tracker photo shows a legible brand mark (Apple/AirTag, Tile, TrackR, Chipolo, Samsung) |
-| Portable SSD | Electronics | rejected by the independent reviewer: Rule 4: embossed 'SEAGATE' wordmark in the lower-right corner of the lid is clearly readable at 800px (checked on a zoomed region of the source); cropping it out leaves a fragment (the reason attempt 1 was rejected). Third attempt for this noun: falls back to th |
-| Eye Serum | Beauty | no acceptable open-license photo found (64 candidates: archaeological glass, medical/lab vials, an ornate perfume decanter, or branded bottles; nothing reads as a plain modern serum bottle. Category placeholder.) |
-| Sunscreen SPF 50 | Beauty | no acceptable open-license photo found (Attempt 2: every sunscreen/lotion tube found carries readable brand or label text; no plain tube or cream dollop exists in the index. Category placeholder.) |
-| Laptop Sleeve | Accessories | no acceptable open-license photo found (The only real sleeve photo has a legible laptop-maker logo inside every possible square crop; all other results were unrelated. Category placeholder.) |
 | Racing Wheel | Gaming | no acceptable open-license photo found (Every sim-racing wheel found has a large readable maker wordmark or logo on the hub. Category placeholder.) |
-| Art Set | Toys | no acceptable open-license photo found (Attempt 2: every open paint set on Commons has pigment cakes embossed with readable maker/pigment names; other candidates are catalogue pages, an empty box, or museum fragment shots with copyright cap) |

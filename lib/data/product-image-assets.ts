@@ -28,6 +28,10 @@ export const PRODUCT_IMAGE_ASSETS = {
       "hash": "bc598ef303",
       "color": "#180808"
     },
+    "art-set": {
+      "hash": "de501fba58",
+      "color": "#d8d8d8"
+    },
     "atlas-of-small-things": {
       "hash": "d8aa02f27d",
       "color": "#f8f8f8"
@@ -43,6 +47,10 @@ export const PRODUCT_IMAGE_ASSETS = {
     "blueprints-for-nothing": {
       "hash": "e8bed15bc6",
       "color": "#f8f8f8"
+    },
+    "bluetooth-tracker": {
+      "hash": "522f41d13c",
+      "color": "#d8d8d8"
     },
     "board-game": {
       "hash": "7360bdf63b",
@@ -61,8 +69,8 @@ export const PRODUCT_IMAGE_ASSETS = {
       "color": "#f8f8f8"
     },
     "capture-card": {
-      "hash": "6be8ec3195",
-      "color": "#888878"
+      "hash": "243f27d05a",
+      "color": "#d8d8d8"
     },
     "card-holder": {
       "hash": "7fa44ff023",
@@ -85,8 +93,8 @@ export const PRODUCT_IMAGE_ASSETS = {
       "color": "#e8e8e8"
     },
     "console-stand": {
-      "hash": "33776fea79",
-      "color": "#f8f8f8"
+      "hash": "137ba5643b",
+      "color": "#d8d8d8"
     },
     "console-table": {
       "hash": "49759079fb",
@@ -116,6 +124,10 @@ export const PRODUCT_IMAGE_ASSETS = {
       "hash": "538e30e2bc",
       "color": "#f8f8f8"
     },
+    "eye-serum": {
+      "hash": "49672c6f7d",
+      "color": "#d8d8d8"
+    },
     "facial-roller": {
       "hash": "8a96bb9b5d",
       "color": "#f8f8f8"
@@ -129,8 +141,8 @@ export const PRODUCT_IMAGE_ASSETS = {
       "color": "#a88868"
     },
     "hair-oil": {
-      "hash": "9ca5da2a54",
-      "color": "#e8e8e8"
+      "hash": "42d43ed119",
+      "color": "#d8d8d8"
     },
     "headset": {
       "hash": "1d6d554d56",
@@ -151,6 +163,10 @@ export const PRODUCT_IMAGE_ASSETS = {
     "knit-beanie": {
       "hash": "e530812cb3",
       "color": "#282828"
+    },
+    "laptop-sleeve": {
+      "hash": "754810b1eb",
+      "color": "#d8d8d8"
     },
     "leather-belt": {
       "hash": "ead849c821",
@@ -197,8 +213,8 @@ export const PRODUCT_IMAGE_ASSETS = {
       "color": "#f8f8f8"
     },
     "night-cream": {
-      "hash": "035ab62553",
-      "color": "#f8f8f8"
+      "hash": "e6f024297f",
+      "color": "#d8d8d8"
     },
     "nightstand": {
       "hash": "636e6c2590",
@@ -244,6 +260,10 @@ export const PRODUCT_IMAGE_ASSETS = {
       "hash": "ccf816f675",
       "color": "#f8f8f8"
     },
+    "portable-ssd": {
+      "hash": "96ac8f3de7",
+      "color": "#d8d8d8"
+    },
     "power-bank": {
       "hash": "cf2aebc17b",
       "color": "#f8f8f8"
@@ -265,8 +285,8 @@ export const PRODUCT_IMAGE_ASSETS = {
       "color": "#f8f8f8"
     },
     "rgb-mousepad": {
-      "hash": "ba8ac6f6ca",
-      "color": "#e8d8c8"
+      "hash": "6535fab4cc",
+      "color": "#d8d8d8"
     },
     "running-shoes": {
       "hash": "c3a4d07a60",
@@ -307,6 +327,10 @@ export const PRODUCT_IMAGE_ASSETS = {
     "sunglasses": {
       "hash": "75a9e43bcb",
       "color": "#f8f8f8"
+    },
+    "sunscreen-spf-50": {
+      "hash": "7aba9b303d",
+      "color": "#d8d8d8"
     },
     "systems-and-seasons": {
       "hash": "ddf85d7044",
