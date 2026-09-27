@@ -19,7 +19,7 @@
  *  - anything else becomes provider "none" (the storefront shows the category
  *    placeholder) with the reason recorded;
  *  - nouns with a picked studio render in data/product-renders.json are replaced by their
- *    render entry (provider "render", scripts/images/render-products.mjs);
+ *    render entry (provider "local-3d-render", scripts/images/render-products.mjs);
  *  - every cached original must exist, match the recorded file dimensions and
  *    the picked candidate (sidecar), and the crop must be ≥ 800 px and in
  *    bounds — otherwise the script fails.

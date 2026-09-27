@@ -91,16 +91,16 @@ the manifest; exit 1 on any failure. Recommended entry shape = crop.mjs JSON + v
 `{noun, slug, provider, origin_page_url, file_url, file_width, file_height, source_file, crop:{left,top,size},
 license_code, license_version, license_name, license_url, creator, title}`.
 
-## 5. Studio renders (no photo): `render-products.mjs`
+## 5. Local 3D renders (no photo): `render-products.mjs`
 
-For product types with no acceptable open-license photo, an original studio packshot of a
-generic, unbranded product is rendered locally with three.js in Playwright's headless Chromium
-(WebGL via SwiftShader; no GPU, network, account or API key). `three` is a devDependency, and
-like sharp it never reaches the Worker bundle.
+For product types with no acceptable open-license photo, an original 3D scene of a generic,
+unbranded product is modelled in code and rendered locally with three.js in Playwright's headless
+Chromium (WebGL via SwiftShader). It needs no photograph, generative AI, GPU, network, account or
+API key. `three` is a devDependency, and like sharp it never reaches the Worker bundle.
 
 ```sh
-node scripts/images/render-products.mjs --only night-cream,hair-oil --seeds 1,2,3,4   # candidates
-node scripts/images/render-products.mjs [--only <slug>]                               # picks
+node scripts/images/render-products.mjs --only bed-frame,play-tent --seeds 1,2,3,4   # candidates
+node scripts/images/render-products.mjs [--only <slug>]                              # picks
 ```
 
 - Scenes: `render/products/<slug>.js` (geometry + materials, built from `render/kit.js`). The
@@ -110,15 +110,19 @@ node scripts/images/render-products.mjs [--only <slug>]                         
   sub-pixel, which gives soft contact shadows and clean anti-aliasing. It renders at 2048², and
   sharp downsamples to 1024².
 - A seed picks the scene's variant (colourway, composition, proportions, camera azimuth). It is
-  deterministic, so a recorded seed reproduces its pick.
+  deterministic: a recorded seed re-renders its pick pixel-identically.
 - Candidate mode writes `$IMG/renders/<slug>/seed-<n>.png`, a 256px `-thumb.jpg` and `log.json`
   (seed, samples, variant, camera).
 - `data/product-renders.json` records, per noun, every candidate's seed, variant and review verdict.
-  For the pick it also records `seed`, `alt_text` and `confidence`. Only nouns with an `alt_text`
-  count as picked.
+  For the pick it also records `seed`, `alt_text` and `confidence`; only nouns with an `alt_text`
+  count as picked. Pick mode also writes the tool versions it rendered with (`tool`: three.js,
+  Chromium/Playwright, WebGL renderer).
 - Pick mode renders the recorded seed to `assets/product-source/renders/<slug>.png` and writes the
-  noun's `provider: "render"` entry into `data/product-images.json` (`lib/render-entry.mjs`;
-  `assemble-manifest.mjs` re-applies it). Then run `npm run images:build`.
+  noun's entry into `data/product-images.json` (`lib/render-entry.mjs`; `assemble-manifest.mjs`
+  re-applies it). The entry has `provider: "local-3d-render"` and is licensed CC0 1.0, credited to
+  Aurora Market. `render` records method, tool, scene file, seed, variant and samples;
+  `origin_page_url` links the scene source. /credits shows each one as "3D render · Aurora
+  Market · CC0". Then run `npm run images:build`.
 
 ## State & debugging
 

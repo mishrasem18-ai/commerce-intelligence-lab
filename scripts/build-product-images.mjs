@@ -83,7 +83,7 @@ async function encodeWebp(square, width) {
 async function processEntry(entry) {
   const source = join(root, entry.source_path);
   if (!existsSync(source)) {
-    const how = entry.provider === "render" ? "render-products.mjs" : "fetch-sources.mjs";
+    const how = entry.provider === "local-3d-render" ? "render-products.mjs" : "fetch-sources.mjs";
     return { slug: entry.slug, error: `missing original ${entry.source_path} (run scripts/images/${how})` };
   }
   const { left, top, size } = entry.crop;

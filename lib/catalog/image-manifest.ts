@@ -2,8 +2,9 @@
  * data/product-images.json — the provenance record for every product image:
  * where each photo came from, who made it, its license (as re-checked at the
  * origin) and what we changed. Product types with no usable open-license photo
- * can instead carry an original studio render (provider "render",
- * scripts/images/render-products.mjs). It drives the build pipeline
+ * can instead carry an original 3D render (provider "local-3d-render",
+ * scripts/images/render-products.mjs): a procedural three.js scene rendered
+ * locally — not a photograph, not generative AI. It drives the build pipeline
  * (scripts/build-product-images.mjs), source re-downloads
  * (scripts/images/fetch-sources.mjs) and the /credits page.
  */
@@ -17,9 +18,10 @@ export interface ProductImageManifestEntry {
   category: ProductCategory;
   /**
    * "none": no acceptable open-license photo — the category placeholder is used.
-   * "render": an original three.js studio render made for this store (no photo).
+   * "local-3d-render": an original three.js scene rendered locally for this store —
+   * not a photograph and not generative AI (see `render`).
    */
-  provider: "wikimedia" | "flickr" | "render" | "none";
+  provider: "wikimedia" | "flickr" | "local-3d-render" | "none";
   /** The page that states the license (Commons file page / Flickr photo page; for renders, the scene source). */
   origin_page_url: string;
   /** The exact file downloaded (reproducible build input). */
@@ -44,8 +46,15 @@ export interface ProductImageManifestEntry {
   source_path: string;
   /** Books only: a fictional cover composited onto the base photo. */
   composite?: { base: string; title: string; author: string };
-  /** Renders only: the scene module and the seed/sample count it was rendered with. */
-  render?: { scene: string; seed: number; samples: number };
+  /** Renders only: how it was made — tool versions, scene module, seed, variant, samples. */
+  render?: {
+    method: string;
+    tool: { renderer: string; browser: string; webgl: string };
+    scene: string;
+    seed: number;
+    variant: string;
+    samples: number;
+  };
 }
 
 export interface ProductImageManifest {
@@ -55,7 +64,7 @@ export interface ProductImageManifest {
 
 /** "Cropped, resized, background normalised" — the human summary for credits. */
 export function describeModifications(entry: ProductImageManifestEntry): string {
-  if (entry.provider === "render") return "Rendered with three.js, resized";
+  if (entry.provider === "local-3d-render") return "Rendered locally with three.js — not a photograph";
   const parts = ["cropped", "resized"];
   if (entry.bg_normalised) parts.push("background normalised");
   if (entry.composite) parts.push("cover design composited");
@@ -66,6 +75,6 @@ export function describeModifications(entry: ProductImageManifestEntry): string 
 export function providerLabel(provider: ProductImageManifestEntry["provider"]): string {
   if (provider === "wikimedia") return "Wikimedia Commons";
   if (provider === "flickr") return "Flickr";
-  if (provider === "render") return "Scene source";
+  if (provider === "local-3d-render") return "Scene source";
   return "";
 }

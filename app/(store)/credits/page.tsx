@@ -28,13 +28,15 @@ export default function CreditsPage() {
     <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">Image credits</h1>
       <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-        Aurora Market is a demo store with fictional brands. Its product photos are real
+        Aurora Market is a demo store with fictional brands. Most product images are real
         photographs of each product type, published by their creators under open licenses on
         Wikimedia Commons and Flickr, and self-hosted here. Every photo was cropped to a square
         and resized; no photo shows a real brand. Book covers are original designs for fictional
-        titles, composited onto a public-domain photo of a blank book. A few product types with no
-        usable open-license photo are shown as original studio renders of a generic, unbranded
-        product, made with three.js; their scene code is in the project&rsquo;s repository.
+        titles, composited onto a public-domain photo of a blank book. Product types with no usable
+        open-license photo are shown as a <strong className="font-medium text-foreground">3D
+        render</strong> instead — not a photograph and not AI-generated: an original scene of a
+        generic, unbranded product, modelled in code and rendered locally with three.js, dedicated
+        to the public domain (CC0). Each render&rsquo;s scene source is linked below.
       </p>
 
       {byCategory.map(({ category, entries }) => (
@@ -62,19 +64,11 @@ export default function CreditsPage() {
                     <p className="text-muted-foreground">
                       Illustrated placeholder — no open-license photo met our criteria.
                     </p>
-                  ) : entry.provider === "render" ? (
+                  ) : entry.provider === "local-3d-render" ? (
                     <>
                       <p className="text-muted-foreground">
-                        Original 3D render: {entry.creator} ·{" "}
-                        <a
-                          href={entry.origin_page_url}
-                          className="underline underline-offset-2 hover:text-foreground"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {providerLabel(entry.provider)}
-                        </a>{" "}
-                        ·{" "}
+                        <span className="font-medium text-foreground">3D render</span> ·{" "}
+                        {entry.creator} ·{" "}
                         <a
                           href={entry.license_url}
                           className="underline underline-offset-2 hover:text-foreground"
@@ -84,7 +78,17 @@ export default function CreditsPage() {
                           {entry.license}
                         </a>
                       </p>
-                      <p className="text-xs text-muted-foreground">{describeModifications(entry)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {describeModifications(entry)} ·{" "}
+                        <a
+                          href={entry.origin_page_url}
+                          className="underline underline-offset-2 hover:text-foreground"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {providerLabel(entry.provider)}
+                        </a>
+                      </p>
                     </>
                   ) : (
                     <>

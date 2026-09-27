@@ -12,7 +12,9 @@
 // Candidate mode writes <scratch>/renders/<slug>/seed-<n>.png (+ a 256px thumb and log.json).
 // Pick mode renders the seed recorded in data/product-renders.json into
 // assets/product-source/renders/<slug>.png (1024², the build input for build-product-images.mjs)
-// and writes those nouns' entries (provider "render") into data/product-images.json.
+// and writes those nouns' entries (provider "local-3d-render") into data/product-images.json. It
+// also records the tool versions it rendered with (three.js, Chromium, WebGL renderer) in
+// data/product-renders.json, so every manifest entry names the exact tool.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -72,7 +74,13 @@ await page.route("http://render.local/**", async (route) => {
 });
 await page.goto("http://render.local/index.html");
 await page.waitForFunction(() => window.renderProduct);
-console.log(`WebGL: ${await page.evaluate(() => window.glInfo())}`);
+const versionOf = (pkg) => JSON.parse(fs.readFileSync(path.join(ROOT, "node_modules", pkg, "package.json"), "utf8")).version;
+const tool = {
+  renderer: `three.js ${versionOf("three")}`,
+  browser: `headless Chromium ${browser.version()} (Playwright ${versionOf("@playwright/test")})`,
+  webgl: await page.evaluate(() => window.glInfo()),
+};
+console.log(`${tool.renderer} · ${tool.browser} · ${tool.webgl}`);
 
 for (const job of jobs) {
   const started = Date.now();
@@ -96,8 +104,10 @@ for (const job of jobs) {
 await browser.close();
 
 if (!seeds) {
+  const { samples: recordedSamples, renders } = config;
+  fs.writeFileSync(CONFIG, `${JSON.stringify({ samples: recordedSamples, tool, renders }, null, 2)}\n`);
   const manifest = JSON.parse(fs.readFileSync(MANIFEST, "utf8"));
-  manifest.entries = applyRenders(manifest.entries, { ...config, renders: config.renders.filter((r) => jobs.some((j) => j.slug === r.slug)) });
+  manifest.entries = applyRenders(manifest.entries, { ...config, tool, renders: renders.filter((r) => jobs.some((j) => j.slug === r.slug)) });
   fs.writeFileSync(MANIFEST, `${JSON.stringify(manifest, null, 2)}\n`);
   console.log(`✓ data/product-images.json: ${jobs.length} render entr${jobs.length === 1 ? "y" : "ies"} written`);
 }

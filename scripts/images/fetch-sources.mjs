@@ -34,8 +34,8 @@ if (!Array.isArray(entries)) die("manifest has no entries array");
 entries = entries.map((e) => ({ ...e, slug: e.slug || (e.noun ? slugify(e.noun) : null) }));
 // Placeholder entries (provider "none") have no source; composited book covers
 // are regenerated from their base photo by render-book-covers.mjs, studio renders
-// (provider "render") by render-products.mjs.
-entries = entries.filter((e) => e.provider !== "none" && e.provider !== "render" && !e.composite);
+// (provider "local-3d-render") by render-products.mjs.
+entries = entries.filter((e) => e.provider !== "none" && e.provider !== "local-3d-render" && !e.composite);
 const BOOKS_CONFIG = path.join(REPO_ROOT, "data/book-covers.json");
 const books = fs.existsSync(BOOKS_CONFIG) ? JSON.parse(fs.readFileSync(BOOKS_CONFIG, "utf8")) : null;
 if (books?.base) entries.push({ ...books.base, slug: slugify(books.base.noun) });

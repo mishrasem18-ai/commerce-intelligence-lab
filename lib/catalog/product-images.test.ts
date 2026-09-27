@@ -90,6 +90,7 @@ test("manifest ↔ catalog ↔ build agree", { skip: !existsSync(MANIFEST_PATH) 
       slug: string; noun: string; category: string; provider: string; creator: string;
       license: string; license_url: string; origin_page_url: string; alt_text: string;
       confidence: string; crop: { size: number };
+      render?: { method: string; tool: { renderer: string; browser: string }; scene: string; seed: number; variant: string };
     }>;
   };
   const bySlug = new Map(manifest.entries.map((e) => [e.slug, e]));
@@ -105,10 +106,16 @@ test("manifest ↔ catalog ↔ build agree", { skip: !existsSync(MANIFEST_PATH) 
       assert.equal(slug in PRODUCT_IMAGE_ASSETS.images, false, `${slug}: placeholder entry must not be built`);
       continue;
     }
-    assert.ok(["wikimedia", "flickr", "render"].includes(entry.provider), slug);
+    assert.ok(["wikimedia", "flickr", "local-3d-render"].includes(entry.provider), slug);
     assert.ok(entry.creator && entry.license_url && entry.origin_page_url && entry.alt_text, `${slug}: incomplete credit`);
     assert.doesNotMatch(`${entry.license} ${entry.license_url}`, /\b(nc|nd)\b/i, `${slug}: NC/ND license`);
     assert.ok(entry.crop.size >= 800, `${slug}: crop below 800px`);
+    if (entry.provider === "local-3d-render") {
+      // A render must say how it was made: tool, scene file, seed and variant.
+      const r = entry.render;
+      assert.ok(r?.method && r.tool?.renderer && r.tool.browser && r.variant && Number.isInteger(r.seed), `${slug}: render provenance`);
+      assert.ok(existsSync(join(ROOT, r.scene)), `${slug}: scene ${r.scene} missing`);
+    }
     assert.ok(slug in PRODUCT_IMAGE_ASSETS.images, `${slug}: not built — run npm run images:build`);
   }
   // Every seeded product points at a manifest entry of its own category.
