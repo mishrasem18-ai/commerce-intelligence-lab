@@ -5,49 +5,52 @@ for the crops. Every pick passed the hard rules (exact item type, clear subject,
 no readable logos/text, no watermark, ≥ 800 px 1:1 crop) and its license was re-read at the
 origin page. Confidence is the lower of the picker's and the independent reviewer's rating.
 
-Totals: 102 nouns — high 49, medium 48, low 4, category placeholder 1. That includes 11 studio renders
-(4 high, 7 medium), which replaced 6 of the 7 category placeholders and 5 of the 9 low-confidence photos.
-Originally: high 45, medium 41, low 9, placeholder 7.
+Totals: 102 nouns — high 51, medium 48, low 2, category placeholder 1. That includes 13 local 3D renders
+(6 high, 7 medium), which replaced 6 of the 7 category placeholders and 7 of the 9 low-confidence photos.
+Originally: high 45, medium 41, low 9, placeholder 7. Before/after for every replaced image:
+`docs/product-images-before-after.jpg`.
 
 Background normalisation (C4, rembg) was not applied: busy backgrounds are a minority and the
 brief allows it only where edges come out clean, so every entry records `bg_normalised: false`.
 
-## Studio renders (11)
+## Local 3D renders (13)
 
-Original packshots of generic, unbranded products, rendered locally with three.js in headless
-Chromium (`scripts/images/render-products.mjs`; no photo, API or account). Each noun got 4
-candidates (seeds 1–4, 64 samples, 1024²). Every candidate was checked on a 256px thumbnail for:
-exact item type, no text or lettering, no logo-like marks, no shape artefacts, and reading as a
-real product photo. The verdict for each seed is in `data/product-renders.json`. No noun needed a
-regeneration round.
+Provider `local-3d-render`: an original scene of a generic, unbranded product. It is modelled in code
+and rendered locally with three.js in headless Chromium (`scripts/images/render-products.mjs`), with
+no photograph, no generative AI, and no API or account. The renders are dedicated to the public
+domain (CC0 1.0), and /credits labels each one "3D render". Each manifest entry records its tool
+versions, scene file, seed and variant (`render`).
+
+Each noun got 4 candidates (seeds 1–4, 64 samples, 1024²). Every candidate was checked on a 256px
+thumbnail for: exact item type, no text or lettering, no logo-like marks, no shape artefacts, and
+reading as a real product photo. The verdict for each seed is in `data/product-renders.json`. No noun
+needed a regeneration round.
 
 | Noun | Category | Replaces | Confidence | Why | Source |
 | --- | --- | --- | --- | --- | --- |
-| Hair Oil | Beauty | low photo (antique Roman flask) | medium | Original render: amber Boston-round bottle with a gold collar and black rubber dropper, part-filled with golden oil; no text or marks. A dropper bottle could also read as a serum, so medium. | [scene](../scripts/images/render/products/hair-oil.js), seed 4 |
-| Eye Serum | Beauty | placeholder | medium | Original render: slim clear-glass roll-on with blush serum, rose-gold roller ball and its cap beside it; no text or marks. A roll-on could also be a perfume oil, so medium. | [scene](../scripts/images/render/products/eye-serum.js), seed 2 |
-| Night Cream | Beauty | low photo (antique ointment pot) | high | Original render: open plum frosted-glass cream jar showing the cream, gold screw lid beside it; no text or marks. Replaces the antique ointment pot. | [scene](../scripts/images/render/products/night-cream.js), seed 2 |
-| Sunscreen SPF 50 | Beauty | placeholder | medium | Original render: plain yellow squeeze tube standing on a white flip-top cap beside a dollop of lotion; no text. With no label any lotion tube could be sunscreen, so medium. | [scene](../scripts/images/render/products/sunscreen-spf-50.js), seed 2 |
-| Portable SSD | Electronics | placeholder | medium | Original render: pocket-size space-grey aluminium drive with a USB-C port, activity LED and a short USB-C cable; no text or logo. Without a label it could also be a power bank, so medium. | [scene](../scripts/images/render/products/portable-ssd.js), seed 1 |
-| Bluetooth Tracker | Electronics | placeholder | medium | Original render: white rounded-square tag with a graphite rim on a steel split key ring; no text or logo. A plain tag is the generic key-finder shape but not unmistakable, so medium. | [scene](../scripts/images/render/products/bluetooth-tracker.js), seed 4 |
-| Capture Card | Gaming | low photo (partial AV box) | medium | Original render: compact white capture box with HDMI in and out (both cables plugged in), USB-C and a light bar; no text or logo. An unlabelled HDMI box could also be a switch, so medium. | [scene](../scripts/images/render/products/capture-card.js), seed 2 |
-| Console Stand | Gaming | low photo (cropped console) | high | Original render: black vertical stand holding a plain, unbranded white slim console, with two controller charging docks and LEDs; no text or logo, and no real console's design. | [scene](../scripts/images/render/products/console-stand.js), seed 1 |
-| RGB Mousepad | Gaming | low photo (no RGB, mouse dominates) | high | Original render: black cloth gaming mouse pad with a glowing rainbow RGB edge strip and a USB controller block with cable; no text or logo. | [scene](../scripts/images/render/products/rgb-mousepad.js), seed 1 |
-| Laptop Sleeve | Accessories | placeholder | medium | Original render: navy wool-felt envelope sleeve with a fold-over flap, brown leather strap and stud, lying flat; no text or logo. With no laptop shown it could also read as a document folio, so medium. | [scene](../scripts/images/render/products/laptop-sleeve.js), seed 2 |
-| Art Set | Toys | placeholder | high | Original render: open walnut case with coloured pencils, oil pastels, watercolour pans, brushes, paint tubes and a mixing palette; no text or maker marks. | [scene](../scripts/images/render/products/art-set.js), seed 2 |
+| Hair Oil | Beauty | low photo (antique Roman flask) | medium | Original 3D render: amber Boston-round bottle with a gold collar and black rubber dropper, part-filled with golden oil; no text or marks. A dropper bottle could also read as a serum, so medium. | [scene](../scripts/images/render/products/hair-oil.js), seed 4 (amber glass, gold collar, black bulb) |
+| Eye Serum | Beauty | placeholder | medium | Original 3D render: slim clear-glass roll-on with blush serum, rose-gold roller ball and its cap beside it; no text or marks. A roll-on could also be a perfume oil, so medium. | [scene](../scripts/images/render/products/eye-serum.js), seed 2 (clear glass, blush serum, rose-gold roller) |
+| Night Cream | Beauty | low photo (antique ointment pot) | high | Original 3D render: open plum frosted-glass cream jar showing the cream, gold screw lid beside it; no text or marks. Replaces the antique ointment pot. | [scene](../scripts/images/render/products/night-cream.js), seed 2 (plum frosted glass, gold lid, open with lid beside) |
+| Sunscreen SPF 50 | Beauty | placeholder | medium | Original 3D render: plain yellow squeeze tube standing on a white flip-top cap beside a dollop of lotion; no text. With no label any lotion tube could be sunscreen, so medium. | [scene](../scripts/images/render/products/sunscreen-spf-50.js), seed 2 (sun-yellow tube, white cap, lotion dollop) |
+| Portable SSD | Electronics | placeholder | medium | Original 3D render: pocket-size space-grey aluminium drive with a USB-C port, activity LED and a short USB-C cable; no text or logo. Without a label it could also be a power bank, so medium. | [scene](../scripts/images/render/products/portable-ssd.js), seed 1 (space-grey aluminium, USB-C cable) |
+| Bluetooth Tracker | Electronics | placeholder | medium | Original 3D render: white rounded-square tag with a graphite rim on a steel split key ring; no text or logo. A plain tag is the generic key-finder shape but not unmistakable, so medium. | [scene](../scripts/images/render/products/bluetooth-tracker.js), seed 4 (white rounded-square tag with graphite rim, steel key ring) |
+| Capture Card | Gaming | low photo (partial AV box) | medium | Original 3D render: compact white capture box with HDMI in and out (both cables plugged in), USB-C and a light bar; no text or logo. An unlabelled HDMI box could also be a switch, so medium. | [scene](../scripts/images/render/products/capture-card.js), seed 2 (white, blue light bar, two HDMI cables) |
+| Console Stand | Gaming | low photo (cropped console) | high | Original 3D render: black vertical stand holding a plain, unbranded white slim console, with two controller charging docks and LEDs; no text or logo, and no real console's design. | [scene](../scripts/images/render/products/console-stand.js), seed 1 (black stand, white console) |
+| RGB Mousepad | Gaming | low photo (no RGB, mouse dominates) | high | Original 3D render: black cloth gaming mouse pad with a glowing rainbow RGB edge strip and a USB controller block with cable; no text or logo. | [scene](../scripts/images/render/products/rgb-mousepad.js), seed 1 (square pad, rainbow edge) |
+| Laptop Sleeve | Accessories | placeholder | medium | Original 3D render: navy wool-felt envelope sleeve with a fold-over flap, brown leather strap and stud, lying flat; no text or logo. With no laptop shown it could also read as a document folio, so medium. | [scene](../scripts/images/render/products/laptop-sleeve.js), seed 2 (navy wool felt envelope, brown leather strap) |
+| Art Set | Toys | placeholder | high | Original 3D render: open walnut case with coloured pencils, oil pastels, watercolour pans, brushes, paint tubes and a mixing palette; no text or maker marks. | [scene](../scripts/images/render/products/art-set.js), seed 2 (walnut case, lid 103°) |
+| Bed Frame | Furniture | low photo (antique field cot) | high | Original 3D render: bare black metal queen platform bed frame with a spindle headboard, foot posts and wooden slats on a centre support; no text or marks. Replaces the antique field cot. | [scene](../scripts/images/render/products/bed-frame.js), seed 3 (black metal frame, spindle headboard) |
+| Play Tent | Toys | low photo (dog, cluttered room) | high | Original 3D render: sage-green canvas children's teepee on four wooden poles lashed at the top, door flaps tied back over a padded floor mat, plain pennant garland; no text, people or clutter. Replaces the photo with a dog and a cluttered room. | [scene](../scripts/images/render/products/play-tent.js), seed 4 (sage-green canvas) |
 
-Not rendered, and still open: Compression Tee, Training Gloves, Bed Frame, Play Tent, Racing
-Wheel and Headset. Garments, gloves and soft furnishings need cloth simulation or sculpting that
-this geometric toolkit can't make convincing. The racing wheel and the headset are sculpted forms
-where a crude model would read as a toy.
+Not rendered, by decision: Compression Tee, Training Gloves, Racing Wheel and Headset keep their
+current images.
 
-## Low confidence (4)
+## Low confidence (2)
 
 | Noun | Category | Why | Source |
 | --- | --- | --- | --- |
 | Compression Tee | Sports | Plain blank white tee on a hanger on white, no text; a basic cotton tee, not a compression/athletic top. | [origin](https://commons.wikimedia.org/wiki/File:Ringflash_Tshirt_Blank_Template_(3214240974).jpg) |
 | Training Gloves | Sports | Rules met (no people/logos, PD), but these are vintage lace-up boxing gloves in a tight, partial close-up rather than gym training gloves. | [origin](https://commons.wikimedia.org/wiki/File:Black_boxing_gloves.jpg) |
-| Bed Frame | Furniture | Bare folding frame on white, no readable text; a worn canvas field cot (museum model) rather than a modern bed frame, head end cut. | [origin](https://commons.wikimedia.org/wiki/File:Model_of_a_field_hospital_bed,_England,_1914-1918_Wellcome_L0058343.jpg) |
-| Play Tent | Toys | Whole pop-up play tent, no people or readable text; a dog's head in the foreground and a cluttered living room. | [origin](https://commons.wikimedia.org/wiki/File:Circo_Play_Tent.jpg) |
 
 ## Medium confidence (41)
 

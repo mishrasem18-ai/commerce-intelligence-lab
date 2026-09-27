@@ -41,8 +41,8 @@ export const PRODUCT_IMAGE_ASSETS = {
       "color": "#f8f8f8"
     },
     "bed-frame": {
-      "hash": "f042ad1f5d",
-      "color": "#f8f8f8"
+      "hash": "f465d01a19",
+      "color": "#d8d8d8"
     },
     "blueprints-for-nothing": {
       "hash": "e8bed15bc6",
@@ -253,8 +253,8 @@ export const PRODUCT_IMAGE_ASSETS = {
       "color": "#f8f8f8"
     },
     "play-tent": {
-      "hash": "7d070d57a5",
-      "color": "#080808"
+      "hash": "1e17630226",
+      "color": "#d8d8d8"
     },
     "plush-bear": {
       "hash": "ccf816f675",

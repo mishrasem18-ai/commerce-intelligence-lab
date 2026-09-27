@@ -358,12 +358,12 @@
         "top": 0,
         "size": 1080
       },
-      "creator": "Donald Trung Quoc Don (Ch\u1eef H\u00e1n: \u5fb5\u570b\u55ae)",
-      "creator_origin": "Donald Trung Quoc Don (Ch\u1eef H\u00e1n: \u5fb5\u570b\u55ae) - Wikimedia Commons . ( Want to use this image? )",
+      "creator": "Donald Trung Quoc Don (Chữ Hán: 徵國單)",
+      "creator_origin": "Donald Trung Quoc Don (Chữ Hán: 徵國單) - Wikimedia Commons . ( Want to use this image? )",
       "license": "CC BY-SA",
       "license_version": "4.0",
       "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
-      "attribution": "\"Antyne Wireless Charger GY-68, Oude Pekela (2019) 01\" by Donald Trung Quoc Don (Ch\u1eef H\u00e1n: \u5fb5\u570b\u55ae) is licensed under CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0), via Wikimedia Commons. Cropped and resized.",
+      "attribution": "\"Antyne Wireless Charger GY-68, Oude Pekela (2019) 01\" by Donald Trung Quoc Don (Chữ Hán: 徵國單) is licensed under CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0), via Wikimedia Commons. Cropped and resized.",
       "modifications": [
         "cropped to 1:1",
         "resized",
@@ -390,12 +390,12 @@
         "top": 0,
         "size": 1513
       },
-      "creator": "Arne M\u00fcseler / www.arne-mueseler.com",
-      "creator_origin": "Arne M\u00fcseler",
+      "creator": "Arne Müseler / www.arne-mueseler.com",
+      "creator_origin": "Arne Müseler",
       "license": "CC BY-SA",
       "license_version": "3.0",
       "license_url": "https://creativecommons.org/licenses/by-sa/3.0/de/deed.en",
-      "attribution": "\"Apple airpods max 2\" by Arne M\u00fcseler / www.arne-mueseler.com is licensed under CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/de/deed.en), via Wikimedia Commons. Cropped and resized.",
+      "attribution": "\"Apple airpods max 2\" by Arne Müseler / www.arne-mueseler.com is licensed under CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/de/deed.en), via Wikimedia Commons. Cropped and resized.",
       "modifications": [
         "cropped to 1:1",
         "resized",
@@ -459,7 +459,7 @@
       "license": "CC BY-SA",
       "license_version": "3.0",
       "license_url": "https://creativecommons.org/licenses/by-sa/3.0",
-      "attribution": "\"Levi\u00b4s spijkerjack, kort jasje met lange mouwen van lichtblauwe denim, met slijtplekken en reparatie aan kraag, objectnr 24444\" by Museum Rotterdam is licensed under CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0), via Wikimedia Commons. Cropped and resized.",
+      "attribution": "\"Levi´s spijkerjack, kort jasje met lange mouwen van lichtblauwe denim, met slijtplekken en reparatie aan kraag, objectnr 24444\" by Museum Rotterdam is licensed under CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0), via Wikimedia Commons. Cropped and resized.",
       "modifications": [
         "cropped to 1:1",
         "resized",
@@ -619,7 +619,7 @@
       "license": "CC BY-SA",
       "license_version": "3.0",
       "license_url": "https://creativecommons.org/licenses/by-sa/3.0",
-      "attribution": "\"Camisade pu\u00f1o doble\" by Incal is licensed under CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0), via Wikimedia Commons. Cropped and resized.",
+      "attribution": "\"Camisade puño doble\" by Incal is licensed under CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0), via Wikimedia Commons. Cropped and resized.",
       "modifications": [
         "cropped to 1:1",
         "resized",
@@ -1867,7 +1867,7 @@
       "license": "CC BY-SA",
       "license_version": "4.0",
       "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
-      "attribution": "\"Boue d'argile dans une canari Gogotinkpon au B\u00e9nin\" by Adoscam is licensed under CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0), via Wikimedia Commons. Cropped and resized.",
+      "attribution": "\"Boue d'argile dans une canari Gogotinkpon au Bénin\" by Adoscam is licensed under CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0), via Wikimedia Commons. Cropped and resized.",
       "modifications": [
         "cropped to 1:1",
         "resized",
@@ -2248,33 +2248,44 @@
       "noun": "Bed Frame",
       "slug": "bed-frame",
       "category": "Furniture",
-      "provider": "wikimedia",
-      "origin_page_url": "https://commons.wikimedia.org/wiki/File:Model_of_a_field_hospital_bed,_England,_1914-1918_Wellcome_L0058343.jpg",
-      "file_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/31/Model_of_a_field_hospital_bed%2C_England%2C_1914-1918_Wellcome_L0058343.jpg/1920px-Model_of_a_field_hospital_bed%2C_England%2C_1914-1918_Wellcome_L0058343.jpg",
-      "file_width": 1920,
-      "file_height": 1278,
+      "provider": "local-3d-render",
+      "origin_page_url": "https://github.com/mishrasem18-ai/commerce-intelligence-lab/blob/main/scripts/images/render/products/bed-frame.js",
+      "file_url": "",
+      "file_width": 1024,
+      "file_height": 1024,
       "crop": {
-        "left": 550,
+        "left": 0,
         "top": 0,
-        "size": 1278
+        "size": 1024
       },
-      "creator": "Wellcome Collection",
-      "creator_origin": "https://wellcomeimages.org/indexplus/obf_images/7d/87/59e5882855c9eb135f6b56c0e889.jpg Gallery: https://wellcomeimages.org/indexplus/image/L0058343.html Wellcome Collection gallery (2018-03-31): https://wellcomecollection.org/works/autum3j3 CC-BY-4.0",
-      "license": "CC BY",
-      "license_version": "4.0",
-      "license_url": "https://creativecommons.org/licenses/by/4.0",
-      "attribution": "\"Model of a field hospital bed, England, 1914-1918 Wellcome L0058343\" by Wellcome Collection is licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0), via Wikimedia Commons. Cropped and resized.",
+      "creator": "Aurora Market",
+      "creator_origin": "Aurora Market",
+      "license": "CC0",
+      "license_version": "1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "attribution": "\"Bed Frame\" 3D render by Aurora Market is dedicated to the public domain (CC0 1.0) (https://creativecommons.org/publicdomain/zero/1.0/). Rendered locally with three.js from an original scene (scripts/images/render/products/bed-frame.js, seed 3); no photograph and no generative AI were used.",
       "modifications": [
-        "cropped to 1:1",
+        "rendered with three.js (WebGL) at 2048px, 64 samples, downsampled to 1024px",
         "resized",
-        "metadata stripped",
         "re-encoded as AVIF/WebP"
       ],
       "bg_normalised": false,
-      "confidence": "low",
-      "confidence_reason": "Bare folding frame on white, no readable text; a worn canvas field cot (museum model) rather than a modern bed frame, head end cut.",
-      "alt_text": "Folding metal bed frame with a canvas sling and mesh headrest on a white background",
-      "source_path": "assets/product-source/bed-frame.jpg"
+      "confidence": "high",
+      "confidence_reason": "Original 3D render: bare black metal queen platform bed frame with a spindle headboard, foot posts and wooden slats on a centre support; no text or marks. Replaces the antique field cot.",
+      "alt_text": "Black metal queen platform bed frame with a spindle headboard and wooden slats, shown bare on a light grey background",
+      "source_path": "assets/product-source/renders/bed-frame.png",
+      "render": {
+        "method": "procedural 3D scene rendered locally; no photograph, no generative AI",
+        "tool": {
+          "renderer": "three.js 0.186.1",
+          "browser": "headless Chromium 153.0.8010.12 (Playwright 1.63.0)",
+          "webgl": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "scene": "scripts/images/render/products/bed-frame.js",
+        "seed": 3,
+        "variant": "black metal frame, spindle headboard",
+        "samples": 64
+      }
     },
     {
       "noun": "Bookshelf",
@@ -2813,12 +2824,12 @@
         "top": 364,
         "size": 1920
       },
-      "creator": "Hirsch Armb\u00e4nder GmbH",
-      "creator_origin": "Hirsch Armb\u00e4nder GmbH",
+      "creator": "Hirsch Armbänder GmbH",
+      "creator_origin": "Hirsch Armbänder GmbH",
       "license": "CC BY-SA",
       "license_version": "3.0",
       "license_url": "https://creativecommons.org/licenses/by-sa/3.0",
-      "attribution": "\"Extreme bracelet\" by Hirsch Armb\u00e4nder GmbH is licensed under CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0), via Wikimedia Commons. Cropped and resized.",
+      "attribution": "\"Extreme bracelet\" by Hirsch Armbänder GmbH is licensed under CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0), via Wikimedia Commons. Cropped and resized.",
       "modifications": [
         "cropped to 1:1",
         "resized",
@@ -3198,7 +3209,7 @@
       "license": "CC0",
       "license_version": "1.0",
       "license_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-      "attribution": "\"Micr\u00f2fon de p\u00f2dcast i llibres en catal\u00e0\" by Xavier Dengra is dedicated to the public domain (CC0 1.0) (http://creativecommons.org/publicdomain/zero/1.0/deed.en), via Wikimedia Commons. Cropped and resized.",
+      "attribution": "\"Micròfon de pòdcast i llibres en català\" by Xavier Dengra is dedicated to the public domain (CC0 1.0) (http://creativecommons.org/publicdomain/zero/1.0/deed.en), via Wikimedia Commons. Cropped and resized.",
       "modifications": [
         "cropped to 1:1",
         "resized",
@@ -3250,7 +3261,7 @@
         },
         "scene": "scripts/images/render/products/art-set.js",
         "seed": 2,
-        "variant": "walnut case, lid 103\u00b0",
+        "variant": "walnut case, lid 103°",
         "samples": 64
       }
     },
@@ -3386,33 +3397,44 @@
       "noun": "Play Tent",
       "slug": "play-tent",
       "category": "Toys",
-      "provider": "wikimedia",
-      "origin_page_url": "https://commons.wikimedia.org/wiki/File:Circo_Play_Tent.jpg",
-      "file_url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Circo_Play_Tent.jpg",
-      "file_width": 1080,
-      "file_height": 1350,
+      "provider": "local-3d-render",
+      "origin_page_url": "https://github.com/mishrasem18-ai/commerce-intelligence-lab/blob/main/scripts/images/render/products/play-tent.js",
+      "file_url": "",
+      "file_width": 1024,
+      "file_height": 1024,
       "crop": {
         "left": 0,
         "top": 0,
-        "size": 1080
+        "size": 1024
       },
-      "creator": "Samuel Abraham Steinberg",
-      "creator_origin": "Samuel Abraham Steinberg",
+      "creator": "Aurora Market",
+      "creator_origin": "Aurora Market",
       "license": "CC0",
       "license_version": "1.0",
-      "license_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-      "attribution": "\"Circo Play Tent\" by Samuel Abraham Steinberg is dedicated to the public domain (CC0 1.0) (http://creativecommons.org/publicdomain/zero/1.0/deed.en), via Wikimedia Commons. Cropped and resized.",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "attribution": "\"Play Tent\" 3D render by Aurora Market is dedicated to the public domain (CC0 1.0) (https://creativecommons.org/publicdomain/zero/1.0/). Rendered locally with three.js from an original scene (scripts/images/render/products/play-tent.js, seed 4); no photograph and no generative AI were used.",
       "modifications": [
-        "cropped to 1:1",
+        "rendered with three.js (WebGL) at 2048px, 64 samples, downsampled to 1024px",
         "resized",
-        "metadata stripped",
         "re-encoded as AVIF/WebP"
       ],
       "bg_normalised": false,
-      "confidence": "low",
-      "confidence_reason": "Whole pop-up play tent, no people or readable text; a dog's head in the foreground and a cluttered living room.",
-      "alt_text": "Colourful pop-up play tent with circular window cutouts on a tile floor",
-      "source_path": "assets/product-source/play-tent.jpg"
+      "confidence": "high",
+      "confidence_reason": "Original 3D render: sage-green canvas children's teepee on four wooden poles lashed at the top, door flaps tied back over a padded floor mat, plain pennant garland; no text, people or clutter. Replaces the photo with a dog and a cluttered room.",
+      "alt_text": "Sage-green canvas children's teepee play tent on wooden poles, door flaps tied back over a padded floor mat, with a plain pennant garland, on a light grey background",
+      "source_path": "assets/product-source/renders/play-tent.png",
+      "render": {
+        "method": "procedural 3D scene rendered locally; no photograph, no generative AI",
+        "tool": {
+          "renderer": "three.js 0.186.1",
+          "browser": "headless Chromium 153.0.8010.12 (Playwright 1.63.0)",
+          "webgl": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "scene": "scripts/images/render/products/play-tent.js",
+        "seed": 4,
+        "variant": "sage-green canvas",
+        "samples": 64
+      }
     },
     {
       "noun": "Plush Bear",

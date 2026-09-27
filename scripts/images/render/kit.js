@@ -285,7 +285,7 @@ export function mesh(geometry, material, { position, rotation, scale, castShadow
 }
 
 /** Straight-grain wood (canvas, sRGB): streaks along x, warped by noise, with fine pores. */
-export function woodTexture(random, light, dark, width = 1024, height = 256) {
+export function woodTexture(random, light, dark, width = 1024, height = 256, warpAmount = 0.25) {
   const warp = fbm(random, 256, 4, 3);
   const pores = Array.from({ length: 900 }, () => [random(), random(), 0.2 + random() * 0.8]);
   const lines = Array.from({ length: 70 }, () => [random(), 0.3 + random() * 0.7]);
@@ -299,7 +299,7 @@ export function woodTexture(random, light, dark, width = 1024, height = 256) {
       ctx.beginPath();
       for (let x = 0; x <= w; x += 8) {
         const n = warp[Math.floor((y0 * 255 + 0) % 256) * 256 + Math.floor((x / w) * 255)];
-        const y = (y0 + (n - 0.5) * 0.25) * h;
+        const y = (y0 + (n - 0.5) * warpAmount) * h;
         if (x === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       }

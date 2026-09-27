@@ -557,7 +557,7 @@
         {
           "seed": 1,
           "samples": 64,
-          "variant": "beech case, lid 102\u00b0",
+          "variant": "beech case, lid 102°",
           "camera": {
             "azimuth": 18.96,
             "elevation": 42,
@@ -568,7 +568,7 @@
         {
           "seed": 2,
           "samples": 64,
-          "variant": "walnut case, lid 103\u00b0",
+          "variant": "walnut case, lid 103°",
           "camera": {
             "azimuth": 25.02,
             "elevation": 42,
@@ -579,7 +579,7 @@
         {
           "seed": 3,
           "samples": 64,
-          "variant": "white-oak case, lid 100\u00b0",
+          "variant": "white-oak case, lid 100°",
           "camera": {
             "azimuth": 21.56,
             "elevation": 42,
@@ -590,13 +590,121 @@
         {
           "seed": 4,
           "samples": 64,
-          "variant": "beech case, deeper lid angle, lid 112\u00b0",
+          "variant": "beech case, deeper lid angle, lid 112°",
           "camera": {
             "azimuth": 25.11,
             "elevation": 42,
             "fov": 26
           },
           "verdict": "acceptable"
+        }
+      ]
+    },
+    {
+      "noun": "Bed Frame",
+      "slug": "bed-frame",
+      "seed": 3,
+      "alt_text": "Black metal queen platform bed frame with a spindle headboard and wooden slats, shown bare on a light grey background",
+      "confidence": "high",
+      "confidence_reason": "Original 3D render: bare black metal queen platform bed frame with a spindle headboard, foot posts and wooden slats on a centre support; no text or marks. Replaces the antique field cot.",
+      "candidates": [
+        {
+          "seed": 1,
+          "samples": 64,
+          "variant": "natural oak frame, oak panel headboard",
+          "camera": {
+            "azimuth": 38.19,
+            "elevation": 30,
+            "fov": 26
+          },
+          "verdict": "acceptable; pale oak on grey has low contrast"
+        },
+        {
+          "seed": 2,
+          "samples": 64,
+          "variant": "grey upholstered frame, channel-tufted headboard",
+          "camera": {
+            "azimuth": 38.32,
+            "elevation": 30,
+            "fov": 26
+          },
+          "verdict": "acceptable (grey upholstered)"
+        },
+        {
+          "seed": 3,
+          "samples": 64,
+          "variant": "black metal frame, spindle headboard",
+          "camera": {
+            "azimuth": 37.85,
+            "elevation": 30,
+            "fov": 26
+          },
+          "verdict": "picked"
+        },
+        {
+          "seed": 4,
+          "samples": 64,
+          "variant": "walnut frame, cream upholstered headboard",
+          "camera": {
+            "azimuth": 35.06,
+            "elevation": 30,
+            "fov": 26
+          },
+          "verdict": "acceptable; cream headboard on grey has low contrast"
+        }
+      ]
+    },
+    {
+      "noun": "Play Tent",
+      "slug": "play-tent",
+      "seed": 4,
+      "alt_text": "Sage-green canvas children's teepee play tent on wooden poles, door flaps tied back over a padded floor mat, with a plain pennant garland, on a light grey background",
+      "confidence": "high",
+      "confidence_reason": "Original 3D render: sage-green canvas children's teepee on four wooden poles lashed at the top, door flaps tied back over a padded floor mat, plain pennant garland; no text, people or clutter. Replaces the photo with a dog and a cluttered room.",
+      "candidates": [
+        {
+          "seed": 1,
+          "samples": 64,
+          "variant": "natural canvas, pale-wood poles",
+          "camera": {
+            "azimuth": 26.23,
+            "elevation": 12,
+            "fov": 26
+          },
+          "verdict": "acceptable; natural canvas on grey has low contrast"
+        },
+        {
+          "seed": 2,
+          "samples": 64,
+          "variant": "grey-and-white striped canvas",
+          "camera": {
+            "azimuth": 26.38,
+            "elevation": 12,
+            "fov": 26
+          },
+          "verdict": "acceptable (grey stripes)"
+        },
+        {
+          "seed": 3,
+          "samples": 64,
+          "variant": "blush-pink canvas",
+          "camera": {
+            "azimuth": 25.82,
+            "elevation": 12,
+            "fov": 26
+          },
+          "verdict": "acceptable (blush pink)"
+        },
+        {
+          "seed": 4,
+          "samples": 64,
+          "variant": "sage-green canvas",
+          "camera": {
+            "azimuth": 22.47,
+            "elevation": 12,
+            "fov": 26
+          },
+          "verdict": "picked"
         }
       ]
     }
