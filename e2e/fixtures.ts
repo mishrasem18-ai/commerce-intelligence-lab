@@ -1,3 +1,4 @@
+import { appendFileSync } from "node:fs";
 import { test as base, expect, type Page, type BrowserContext } from "@playwright/test";
 
 /** A canonical envelope as exposed by the read-only window.analyticsData inspector. */
@@ -77,10 +78,48 @@ export async function signUpBuyer(
   return credentials;
 }
 
-export const test = base.extend<{ consented: void }>({
+/** Hosts that load Google tags or receive analytics and ads hits, with their subdomains. */
+const GOOGLE_HIT_HOSTS = [
+  "googletagmanager.com",
+  "google-analytics.com",
+  "analytics.google.com",
+  "doubleclick.net",
+];
+
+const isGoogleHitHost = (url: URL): boolean =>
+  GOOGLE_HIT_HOSTS.some((host) => url.hostname === host || url.hostname.endsWith(`.${host}`));
+
+export const test = base.extend<{ consented: void; noGoogleHits: void }>({
   consented: [
     async ({ context }, use) => {
       await seedConsent(context);
+      await use();
+    },
+    { auto: true },
+  ],
+  // The local preview is built with the GTM container id from .env.local and
+  // specs grant analytics consent, so without this every spec would load the
+  // real container and send hits to the real GA4 property. Specs that need
+  // GTM behaviour stub gtm.js on top (datalayer.spec.ts): the route added
+  // last wins. E2E_REQUEST_LOG=<file> logs every request's outcome as JSON
+  // lines.
+  noGoogleHits: [
+    async ({ context }, use, testInfo) => {
+      await context.route(isGoogleHitHost, (route) => route.abort("blockedbyclient"));
+      const log = process.env.E2E_REQUEST_LOG;
+      if (log) {
+        const write = (url: string, result: number | string) =>
+          appendFileSync(
+            log,
+            `${JSON.stringify({ test: testInfo.titlePath.join(" › "), url, result })}\n`,
+          );
+        context.on("requestfinished", async (request) =>
+          write(request.url(), (await request.response())?.status() ?? "no response"),
+        );
+        context.on("requestfailed", (request) =>
+          write(request.url(), request.failure()?.errorText ?? "failed"),
+        );
+      }
       await use();
     },
     { auto: true },
