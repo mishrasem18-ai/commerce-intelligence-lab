@@ -29,6 +29,7 @@ import {
   SHOP_SORT_LABELS,
   type ShopQuery,
 } from "@/lib/catalog/shop-query";
+import { replaceUrlState } from "@/lib/navigation/replace-url-state";
 import { formatNumber } from "@/lib/utils";
 
 const categoryOptions: SelectOption[] = [
@@ -63,8 +64,19 @@ const sortOptions: SelectOption[] = SHOP_SORT_KEYS.map((key) => ({
  * construction, on desktop and mobile alike.
  *
  * The one exception is the search box's *text*, which needs to echo keystrokes
- * instantly; it is re-synced from the URL whenever the URL's `q` changes, so it
- * can never disagree either (see `queryDraft` below).
+ * instantly; it is re-synced from the URL whenever the URL's `q` changes from
+ * outside (back/forward, a category link, the header search), so it can never
+ * disagree either (see `queryDraft` below).
+ *
+ * Two ways of writing the URL, on purpose. Filters, sort and paging use
+ * `router.replace`: discrete clicks, and the server-rendered heading depends
+ * on the category. Typing uses the native `history.replaceState`
+ * (`replaceUrlState`): the URL changes synchronously and no RSC payload is
+ * requested, so the box and the URL cannot drift apart however fast the user
+ * types or however slow the network is. A `router.replace` per keystroke did
+ * both: on live, replies overlapped, an older URL's `q` overwrote a newer
+ * draft and garbled the text, and the page-view tracker could not match the
+ * commits (see lib/analytics/navigation.ts).
  */
 export function ShopView() {
   const { products, hydrated } = useProducts();
@@ -76,15 +88,30 @@ export function ShopView() {
   // client-side navigation from the header's category links.
   const query = React.useMemo(() => parseShopQuery(searchParams), [searchParams]);
 
-  // Local echo of the search text so typing stays responsive. Reset whenever
-  // the URL's `q` changes (React's "adjust state when a prop changes" pattern),
-  // which covers back/forward, a category link, and the header search box.
+  // Local echo of the search text so typing stays responsive. Re-synced from
+  // the URL's `q` when it changes from OUTSIDE: back/forward, a category
+  // link, the header search box. The box's own writes echo back through the
+  // URL too — possibly one commit per keystroke, in order — and must not
+  // reset a draft that is already ahead of them: that is how an older `q`
+  // used to garble the text. A layout effect, so an outside change shows
+  // before paint.
   const [queryDraft, setQueryDraft] = React.useState(query.q);
-  const [lastUrlQuery, setLastUrlQuery] = React.useState(query.q);
-  if (query.q !== lastUrlQuery) {
-    setLastUrlQuery(query.q);
-    setQueryDraft(query.q);
-  }
+  const ownQueryWrites = React.useRef<{ pending: Set<string>; latest: string | null }>({
+    pending: new Set(),
+    latest: null,
+  });
+  React.useLayoutEffect(() => {
+    const own = ownQueryWrites.current;
+    if (query.q === own.latest) {
+      // The newest write has landed; every older one is superseded.
+      own.pending.clear();
+      own.latest = null;
+    } else if (own.pending.has(query.q)) {
+      own.pending.delete(query.q); // an intermediate write of ours: ignore
+    } else {
+      setQueryDraft(query.q);
+    }
+  }, [query.q]);
 
   /**
    * Write a patch of the query back to the URL. Every filter change preserves
@@ -104,6 +131,21 @@ export function ShopView() {
     },
     [query, pathname, router],
   );
+
+  /**
+   * Typing: rewrite the URL's `q` (back to page 1) with the native history
+   * API — synchronous, no server round trip — and remember the value so its
+   * echo through `useSearchParams` is not mistaken for an outside change.
+   */
+  const refineSearchText = (text: string) => {
+    const params = buildShopParams({ ...query, page: 1, q: text });
+    const qs = params.toString();
+    const echo = parseShopQuery(params).q;
+    const own = ownQueryWrites.current;
+    own.pending.add(echo);
+    own.latest = echo;
+    replaceUrlState(qs ? `${pathname}?${qs}` : pathname);
+  };
 
   const { items, total, page, pageCount } = React.useMemo(
     () => selectShopPage(products, query),
@@ -166,7 +208,7 @@ export function ShopView() {
             onChange={(e) => {
               revision.current += 1;
               setQueryDraft(e.target.value);
-              updateQuery({ q: e.target.value });
+              refineSearchText(e.target.value);
             }}
             placeholder="Search products…"
             aria-label="Search products"
