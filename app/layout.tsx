@@ -4,8 +4,6 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Providers } from "@/components/providers";
 import { getProducts } from "@/lib/db/products";
-import { getOrders } from "@/lib/db/orders";
-import { getCustomers } from "@/lib/db/customers";
 import { RootAnalytics } from "@/components/analytics/root-analytics";
 import { STORE_SITE_NAME } from "@/lib/routes/page-titles";
 
@@ -26,7 +24,7 @@ export const metadata: Metadata = {
     "Enterprise commerce analytics — revenue, orders, customers and AI insights in one workspace.",
 };
 
-// The layout reads commerce data from D1 at request time, so rendering must be
+// The layout reads the catalog from D1 at request time, so rendering must be
 // dynamic — the D1 binding only exists in the Worker runtime, not at build time.
 export const dynamic = "force-dynamic";
 
@@ -35,14 +33,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Authoritative commerce data is read from D1 on the server and handed to the
-  // client stores. If D1 is unavailable this throws (surfaced by the error
-  // boundary) rather than silently falling back to demo data.
-  const [initialProducts, initialOrders, initialCustomers] = await Promise.all([
-    getProducts(),
-    getOrders(),
-    getCustomers(),
-  ]);
+  // The catalog is the only D1 data this layout reads: it renders for EVERY
+  // visitor, so whatever it passes to the client stores is public. Customer
+  // and order records are loaded behind a session check instead — the full
+  // lists in the admin layout, a buyer's own through the buyer account store.
+  // If D1 is unavailable this throws (surfaced by the error boundary) rather
+  // than silently falling back to demo data.
+  const initialProducts = await getProducts();
 
   return (
     <html
@@ -57,11 +54,7 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Providers
-            initialProducts={initialProducts}
-            initialOrders={initialOrders}
-            initialCustomers={initialCustomers}
-          >
+          <Providers initialProducts={initialProducts}>
             {children}
             {/* After the page, so React runs the page's layout effects (its title
                 registration) before the tracker's in the same commit. */}

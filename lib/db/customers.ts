@@ -38,7 +38,10 @@ function toCustomer(row: CustomerRow): Customer {
   };
 }
 
-/** All customers/users, highest spenders first. */
+/**
+ * All customers/users, highest spenders first. Every customer's record: read
+ * it through lib/db/admin-data.ts, which requires an admin session.
+ */
 export async function getCustomers(): Promise<Customer[]> {
   const db = await getDb();
   const { results } = await db

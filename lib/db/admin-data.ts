@@ -12,6 +12,8 @@ import type { Customer, Order } from "@/lib/data";
  *
  * Pages and route handlers still check the session first to answer with a
  * redirect or a 401; this is the backstop behind them.
+ * `lib/auth/data-access.test.ts` fails if the unscoped readers in
+ * lib/db/orders.ts and lib/db/customers.ts are imported anywhere else.
  */
 
 export class AdminSessionRequiredError extends Error {

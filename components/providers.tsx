@@ -2,44 +2,35 @@
 
 import { ToastProvider } from "@/components/ui/toast";
 import { ProductsProvider } from "@/lib/store/products-store";
-import { OrdersProvider } from "@/lib/store/orders-store";
-import { CustomersProvider } from "@/lib/store/customers-store";
 import { CartProvider } from "@/lib/store/cart-store";
 import { BuyerAccountProvider } from "@/lib/store/buyer-account-store";
 import { AuthProvider } from "@/lib/store/auth-store";
 import type { Product } from "@/lib/data/products";
-import type { Customer, Order } from "@/lib/data";
 
 /**
- * One logical commerce data layer shared by the storefront and the admin.
- * Initial product/order/customer data is read from D1 on the server (in the
- * root layout) and passed in here — the stores are D1-backed, not static.
+ * The client stores every route shares: the catalog, the cart, the signed-in
+ * buyer's own account and the auth state. The catalog is read from D1 on the
+ * server (in the root layout) and passed in here. These providers render for
+ * every visitor, so nothing but public data may be passed to them — the full
+ * order and customer lists are mounted only inside the admin layout.
  * Order matters: AuthProvider hands the signed-in buyer's profile to
  * BuyerAccountProvider, so it must be nested inside it.
  */
 export function Providers({
   children,
   initialProducts,
-  initialOrders,
-  initialCustomers,
 }: {
   children: React.ReactNode;
   initialProducts: Product[];
-  initialOrders: Order[];
-  initialCustomers: Customer[];
 }) {
   return (
     <ToastProvider>
       <ProductsProvider initial={initialProducts}>
-        <OrdersProvider initial={initialOrders}>
-          <CustomersProvider initial={initialCustomers}>
-            <CartProvider>
-              <BuyerAccountProvider>
-                <AuthProvider>{children}</AuthProvider>
-              </BuyerAccountProvider>
-            </CartProvider>
-          </CustomersProvider>
-        </OrdersProvider>
+        <CartProvider>
+          <BuyerAccountProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </BuyerAccountProvider>
+        </CartProvider>
       </ProductsProvider>
     </ToastProvider>
   );
