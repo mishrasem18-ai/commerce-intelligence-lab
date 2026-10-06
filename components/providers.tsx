@@ -1,11 +1,20 @@
 "use client";
 
+import * as React from "react";
 import { ToastProvider } from "@/components/ui/toast";
 import { ProductsProvider } from "@/lib/store/products-store";
 import { CartProvider } from "@/lib/store/cart-store";
 import { BuyerAccountProvider } from "@/lib/store/buyer-account-store";
 import { AuthProvider } from "@/lib/store/auth-store";
 import type { Product } from "@/lib/data/products";
+
+/**
+ * Earlier builds kept browser copies of orders and customers under these
+ * localStorage keys. Nothing reads them any more — orders and sign-ups are
+ * written to D1 — and they could leave a previous buyer's email and address
+ * behind on a shared browser, so they are deleted on load.
+ */
+const LEGACY_STORAGE_KEYS = ["cil.orders.v1", "cil.customers.v1"];
 
 /**
  * The client stores every route shares: the catalog, the cart, the signed-in
@@ -23,6 +32,14 @@ export function Providers({
   children: React.ReactNode;
   initialProducts: Product[];
 }) {
+  React.useEffect(() => {
+    try {
+      for (const key of LEGACY_STORAGE_KEYS) window.localStorage.removeItem(key);
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
+
   return (
     <ToastProvider>
       <ProductsProvider initial={initialProducts}>

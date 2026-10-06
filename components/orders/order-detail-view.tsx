@@ -65,7 +65,7 @@ export function OrderDetailView({
   slug: string;
   initialOrder: Order | null;
 }) {
-  const { orders, updateStatus, hydrated } = useOrders();
+  const { orders, updateStatus } = useOrders();
   const { getCustomer, customers } = useCustomers();
   const { toast } = useToast();
 
@@ -73,13 +73,6 @@ export function OrderDetailView({
     orders.find((o) => o.id.replace(/^#/, "") === slug) ?? initialOrder ?? null;
 
   if (!order) {
-    if (!hydrated) {
-      return (
-        <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">
-          Loading order…
-        </div>
-      );
-    }
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-center">
         <h1 className="text-xl font-semibold text-foreground">Order not found</h1>

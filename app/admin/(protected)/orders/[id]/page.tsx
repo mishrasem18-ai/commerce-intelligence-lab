@@ -5,8 +5,8 @@ import { OrderDetailView } from "@/components/orders/order-detail-view";
 import { currentAdminSession } from "@/lib/auth/guards";
 import { getOrderForAdmin } from "@/lib/db/admin-data";
 
-// Orders are served on demand from D1; buyer-created orders (client overlay)
-// resolve via the store when not present in D1.
+// Served on demand from D1, so an order placed after the admin list was
+// loaded still resolves.
 export const dynamic = "force-dynamic";
 
 // Fixed per-template title (no ids, no names): see lib/routes/page-titles.ts.

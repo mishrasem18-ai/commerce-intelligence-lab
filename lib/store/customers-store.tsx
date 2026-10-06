@@ -2,28 +2,18 @@
 
 import * as React from "react";
 import { type Customer } from "@/lib/data";
-import { customerNeedsUpdate, mergeBuyerCustomer } from "@/lib/auth/buyer-state";
 
-const STORAGE_KEY = "cil.customers.v1";
-
-export interface NewCustomerInput {
-  firstName: string;
-  lastName: string;
-  email: string;
-  mobile: string;
-  country?: string;
-  countryCode?: string;
-}
+/*
+ * ADMIN ONLY. Every customer's record, seeded from D1 by the (protected) admin
+ * layout after its server-side session check. Never mount this provider on a
+ * route a buyer or an anonymous visitor can reach: whatever it is seeded with
+ * is sent to the browser. The storefront uses the buyer account store, which
+ * holds only the signed-in buyer's own profile.
+ */
 
 interface CustomersContextValue {
   customers: Customer[];
-  hydrated: boolean;
   getCustomer: (id: string) => Customer | undefined;
-  getCustomerByEmail: (email: string) => Customer | undefined;
-  addCustomer: (input: NewCustomerInput) => Customer;
-  upsertCustomer: (customer: Customer) => void;
-  updateCustomer: (id: string, patch: Partial<Customer>) => void;
-  recordOrder: (id: string, amount: number, date: string) => void;
 }
 
 const CustomersContext = React.createContext<CustomersContextValue | null>(null);
@@ -34,12 +24,6 @@ export function useCustomers(): CustomersContextValue {
   return ctx;
 }
 
-let idCounter = 0;
-function generateId(): string {
-  idCounter += 1;
-  return `C-${Date.now().toString(36)}-${idCounter}`.toUpperCase();
-}
-
 export function CustomersProvider({
   children,
   initial,
@@ -47,146 +31,14 @@ export function CustomersProvider({
   children: React.ReactNode;
   initial: Customer[];
 }) {
-  // Seed customers come from D1 (server-provided `initial`). Buyer sign-ups are
-  // kept in a localStorage overlay until write-through (Phase D/E).
-  const [customers, setCustomers] = React.useState<Customer[]>(initial);
-  const [hydrated, setHydrated] = React.useState(false);
-  const d1Ids = React.useMemo(() => new Set(initial.map((c) => c.id)), [initial]);
-
-  /* eslint-disable react-hooks/set-state-in-effect */
-  React.useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const overlay = (JSON.parse(raw) as Customer[]).filter((c) => !d1Ids.has(c.id));
-        if (overlay.length > 0) setCustomers([...overlay, ...initial]);
-      }
-    } catch {
-      /* ignore malformed storage */
-    }
-    setHydrated(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
-  // Persist ONLY locally-created customers (ids not in D1).
-  React.useEffect(() => {
-    if (!hydrated) return;
-    try {
-      const overlay = customers.filter((c) => !d1Ids.has(c.id));
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(overlay));
-    } catch {
-      /* ignore quota / unavailable storage */
-    }
-  }, [customers, hydrated, d1Ids]);
-
   const getCustomer = React.useCallback(
-    (id: string) => customers.find((c) => c.id === id),
-    [customers],
-  );
-
-  const getCustomerByEmail = React.useCallback(
-    (email: string) =>
-      customers.find((c) => c.email.toLowerCase() === email.trim().toLowerCase()),
-    [customers],
-  );
-
-  const addCustomer = React.useCallback((input: NewCustomerInput) => {
-    const now = new Date().toISOString();
-    const created: Customer = {
-      id: generateId(),
-      name: `${input.firstName} ${input.lastName}`.trim(),
-      firstName: input.firstName,
-      lastName: input.lastName,
-      email: input.email,
-      mobile: input.mobile,
-      country: input.country ?? "India",
-      countryCode: input.countryCode ?? "IN",
-      orders: 0,
-      spent: 0,
-      status: "New",
-      lastSeen: "just now",
-      addresses: [],
-      joinedAt: now,
-    };
-    setCustomers((prev) => [created, ...prev]);
-    return created;
-  }, []);
-
-  /**
-   * Insert (or refresh) a server-authoritative customer record.
-   *
-   * The seed list is a point-in-time D1 snapshot taken when the root layout last
-   * rendered on the server; a buyer who registers *after* that snapshot would
-   * otherwise be missing from the store for the whole client-side session. The
-   * auth store calls this with the profile that comes back from
-   * register/login/session so the signed-in buyer is always present.
-   */
-  const upsertCustomer = React.useCallback((incoming: Customer) => {
-    setCustomers((prev) => {
-      const existing = prev.find((c) => c.id === incoming.id);
-      if (!customerNeedsUpdate(existing, incoming)) return prev; // no-op: same object identity
-      const merged = mergeBuyerCustomer(existing, incoming);
-      return existing
-        ? prev.map((c) => (c.id === incoming.id ? merged : c))
-        : [merged, ...prev];
-    });
-  }, []);
-
-  const updateCustomer = React.useCallback((id: string, patch: Partial<Customer>) => {
-    setCustomers((prev) =>
-      prev.map((c) => {
-        if (c.id !== id) return c;
-        const next = { ...c, ...patch };
-        if (patch.firstName !== undefined || patch.lastName !== undefined) {
-          next.name = `${next.firstName ?? ""} ${next.lastName ?? ""}`.trim() || next.name;
-        }
-        return next;
-      }),
-    );
-  }, []);
-
-  const recordOrder = React.useCallback(
-    (id: string, amount: number, date: string) => {
-      setCustomers((prev) =>
-        prev.map((c) =>
-          c.id === id
-            ? {
-                ...c,
-                orders: c.orders + 1,
-                spent: Math.round((c.spent + amount) * 100) / 100,
-                lastOrderDate: date,
-                lastSeen: "just now",
-                status: c.status === "New" ? "Active" : c.status,
-              }
-            : c,
-        ),
-      );
-    },
-    [],
+    (id: string) => initial.find((c) => c.id === id),
+    [initial],
   );
 
   const value = React.useMemo<CustomersContextValue>(
-    () => ({
-      customers,
-      hydrated,
-      getCustomer,
-      getCustomerByEmail,
-      addCustomer,
-      upsertCustomer,
-      updateCustomer,
-      recordOrder,
-    }),
-    [
-      customers,
-      hydrated,
-      getCustomer,
-      getCustomerByEmail,
-      addCustomer,
-      upsertCustomer,
-      updateCustomer,
-      recordOrder,
-    ],
+    () => ({ customers: initial, getCustomer }),
+    [initial, getCustomer],
   );
 
   return (

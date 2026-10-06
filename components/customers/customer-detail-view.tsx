@@ -31,19 +31,12 @@ export function CustomerDetailView({
   id: string;
   initialCustomer: Customer | null;
 }) {
-  const { getCustomer, hydrated } = useCustomers();
+  const { getCustomer } = useCustomers();
   const { orders } = useOrders();
 
   const customer = getCustomer(id) ?? initialCustomer ?? null;
 
   if (!customer) {
-    if (!hydrated) {
-      return (
-        <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">
-          Loading customer…
-        </div>
-      );
-    }
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-center">
         <h1 className="text-xl font-semibold text-foreground">Customer not found</h1>

@@ -5,8 +5,8 @@ import { CustomerDetailView } from "@/components/customers/customer-detail-view"
 import { currentAdminSession } from "@/lib/auth/guards";
 import { getCustomerForAdmin } from "@/lib/db/admin-data";
 
-// Customers are served on demand from D1; buyer signups (client overlay)
-// resolve via the store when not present in D1.
+// Served on demand from D1, so a customer who signed up after the admin list
+// was loaded still resolves.
 export const dynamic = "force-dynamic";
 
 // Fixed per-template title (no ids, no names): see lib/routes/page-titles.ts.
