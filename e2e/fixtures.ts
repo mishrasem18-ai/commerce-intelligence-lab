@@ -78,6 +78,42 @@ export async function signUpBuyer(
   return credentials;
 }
 
+/** One object pushed onto window.dataLayer. */
+export type Push = Record<string, unknown>;
+
+/**
+ * Serve an empty gtm.js, so the adapter's pushes stay on window.dataLayer and
+ * no tag runs. Added after the noGoogleHits block, so it wins for gtm.js; every
+ * other Google request is still aborted.
+ */
+export async function stubGtm(context: BrowserContext): Promise<void> {
+  await context.route("https://www.googletagmanager.com/**", (route) =>
+    route.fulfill({ contentType: "text/javascript", body: "" }),
+  );
+}
+
+/** Skip the test on a build without NEXT_PUBLIC_GTM_CONTAINER_ID: the adapter pushes nothing. */
+export async function skipWithoutGtm(page: Page): Promise<void> {
+  const configured = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          analyticsData?: { destinations: Array<{ name: string; configured: boolean }> };
+        }
+      ).analyticsData?.destinations.find((d) => d.name === "gtm")?.configured ?? false,
+  );
+  test.skip(!configured, "built without NEXT_PUBLIC_GTM_CONTAINER_ID");
+}
+
+/** The object pushes on window.dataLayer, in order (Consent Mode commands excluded). */
+export function dataLayerPushes(page: Page): Promise<Push[]> {
+  return page.evaluate(() =>
+    ((window as unknown as { dataLayer?: unknown[] }).dataLayer ?? []).filter(
+      (e) => Object.prototype.toString.call(e) === "[object Object]",
+    ),
+  ) as Promise<Push[]>;
+}
+
 /** Hosts that load Google tags or receive analytics and ads hits, with their subdomains. */
 const GOOGLE_HIT_HOSTS = [
   "googletagmanager.com",

@@ -1,5 +1,13 @@
-import type { Page } from "@playwright/test";
-import { test, expect, expectPageViews, signUpBuyer } from "./fixtures";
+import {
+  test,
+  expect,
+  dataLayerPushes,
+  expectPageViews,
+  signUpBuyer,
+  skipWithoutGtm,
+  stubGtm,
+  type Push,
+} from "./fixtures";
 import { gtmDataModel } from "../test/gtm-data-model.mjs";
 
 /**
@@ -12,36 +20,11 @@ import { gtmDataModel } from "../test/gtm-data-model.mjs";
  * the pushes stay inspectable and no hit leaves the test.
  */
 
-type Push = Record<string, unknown>;
-
 const SEARCH_KEYS = ["search_term", "search_results_count", "search_source", "search_zero_results"];
 
 test.beforeEach(async ({ context }) => {
-  await context.route("https://www.googletagmanager.com/**", (route) =>
-    route.fulfill({ contentType: "text/javascript", body: "" }),
-  );
+  await stubGtm(context);
 });
-
-async function skipWithoutGtm(page: Page): Promise<void> {
-  const configured = await page.evaluate(
-    () =>
-      (
-        window as unknown as {
-          analyticsData?: { destinations: Array<{ name: string; configured: boolean }> };
-        }
-      ).analyticsData?.destinations.find((d) => d.name === "gtm")?.configured ?? false,
-  );
-  test.skip(!configured, "built without NEXT_PUBLIC_GTM_CONTAINER_ID");
-}
-
-/** The object pushes on window.dataLayer, in order (Consent Mode commands excluded). */
-function dataLayer(page: Page): Promise<Push[]> {
-  return page.evaluate(() =>
-    ((window as unknown as { dataLayer?: unknown[] }).dataLayer ?? []).filter(
-      (e) => Object.prototype.toString.call(e) === "[object Object]",
-    ),
-  ) as Promise<Push[]>;
-}
 
 /** Asserts the push sets `key` to undefined: present, not merely omitted. */
 function expectCleared(push: Push | undefined, key: string): void {
@@ -80,7 +63,7 @@ test("login → logout: the next page_view clears customer_id", async ({ page, c
   let pushes: Push[] = [];
   await expect
     .poll(async () => {
-      pushes = await dataLayer(page);
+      pushes = await dataLayerPushes(page);
       return pushes.filter((p) => p.event === "page_view").map((p) => p.page_path);
     })
     .toEqual(["/login", "/account", "/account/orders", "/"]);
@@ -112,7 +95,7 @@ test("search → navigate: the next page_view clears the search keys", async ({ 
   await expect(page).toHaveURL(/\/product\//);
   await expectPageViews(page, 3);
 
-  const pushes = await dataLayer(page);
+  const pushes = await dataLayerPushes(page);
   const searchIndex = pushes.findIndex((p) => p.event === "search");
   expect(pushes[searchIndex]).toMatchObject({ search_term: "desk", search_source: "header" });
   expect(gtmDataModel(pushes.slice(0, searchIndex + 1)).search_term).toBe("desk");
@@ -140,7 +123,7 @@ test("hard load with no referrer: page_view clears page_referrer", async ({ page
   await expectPageViews(page, 1);
   expect(await page.evaluate(() => document.referrer)).toBe("");
 
-  const pushes = await dataLayer(page);
+  const pushes = await dataLayerPushes(page);
   const views = pushes.filter((p) => p.event === "page_view");
   expect(views).toHaveLength(1);
   expectCleared(views[0], "page_referrer");
