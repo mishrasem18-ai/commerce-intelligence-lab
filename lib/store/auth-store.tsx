@@ -68,6 +68,8 @@ interface AuthContextValue {
   buyerStatus: BuyerAuthStatus;
   /** Re-validate the buyer session against the server (used by error retries). */
   refreshBuyer: () => Promise<void>;
+  /** Re-validate the admin session against the server; resolves to whether one exists. */
+  refreshAdmin: () => Promise<boolean>;
   signInAdmin: (email: string, password: string) => Promise<AuthResult>;
   signOutAdmin: () => Promise<void>;
   signupBuyer: (input: SignupInput) => Promise<AuthResult>;
@@ -162,6 +164,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   }, [applyBuyerPayload]);
+
+  /**
+   * Re-read the server-validated admin session. `admin` is only a mirror: the
+   * session can end on the server (expiry, sign-out in another tab) while this
+   * document still shows the admin as signed in. A failed request leaves the
+   * mirror as it is and reports "no session".
+   */
+  const refreshAdmin = React.useCallback(async (): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/admin/session", {
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+      if (!res.ok) return false;
+      const data = (await res.json()) as { admin?: { email: string } | null };
+      const email = data.admin?.email ?? null;
+      setAdmin((prev) => (prev?.email === email ? prev : email ? { email } : null));
+      return email !== null;
+    } catch {
+      return false;
+    }
+  }, []);
 
   const signInAdmin = React.useCallback(
     async (email: string, password: string): Promise<AuthResult> => {
@@ -270,6 +294,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       hydrated,
       buyerStatus,
       refreshBuyer,
+      refreshAdmin,
       signInAdmin,
       signOutAdmin,
       signupBuyer,
@@ -282,6 +307,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       hydrated,
       buyerStatus,
       refreshBuyer,
+      refreshAdmin,
       signInAdmin,
       signOutAdmin,
       signupBuyer,

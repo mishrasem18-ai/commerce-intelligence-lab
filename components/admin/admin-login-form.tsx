@@ -10,16 +10,26 @@ import { useAuth } from "@/lib/store/auth-store";
 
 export function AdminLoginForm() {
   const router = useRouter();
-  const { signInAdmin, admin, hydrated } = useAuth();
+  const { signInAdmin, refreshAdmin, admin, hydrated } = useAuth();
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
 
-  // Already signed in → go straight to the dashboard.
+  // Already signed in → go straight to the dashboard. The store's `admin` can
+  // be stale: an admin page redirects here when the server session has ended,
+  // and trusting the stale value would bounce between this page and the
+  // dashboard forever. Ask the server first; a "no" clears the stale value.
   React.useEffect(() => {
-    if (hydrated && admin) router.replace("/admin/dashboard");
-  }, [hydrated, admin, router]);
+    if (!hydrated || !admin) return;
+    let cancelled = false;
+    void refreshAdmin().then((valid) => {
+      if (valid && !cancelled) router.replace("/admin/dashboard");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, admin, refreshAdmin, router]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
