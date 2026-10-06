@@ -18,6 +18,9 @@ import {
 import { createAnalytics } from "../analytics.ts";
 import { createConsentStore } from "../consent.ts";
 import type { AnalyticsData } from "../schema.ts";
+import { cartCommerce, listCommerce, orderCommerce, productCommerce } from "../tracking.ts";
+import { products } from "../../data/products.ts";
+import type { Order } from "../../data.ts";
 import { gtmDataModel } from "../../../test/gtm-data-model.mjs";
 
 const FAKE_ID = "GTM-TEST123"; // test fixture only — not a real container
@@ -210,7 +213,7 @@ test("purchase maps order fields onto the GA4 transaction shape", () => {
       commerce: {
         currency: "USD",
         order_id: "ORD-C4D4D66",
-        value: 237.59,
+        value: 219.99,
         tax: 17.6,
         shipping: 0,
         payment_method: "Card",
@@ -221,8 +224,11 @@ test("purchase maps order fields onto the GA4 transaction shape", () => {
   ) as { event: string; ecommerce: Record<string, unknown> };
   assert.equal(pushed.event, "purchase");
   assert.equal(pushed.ecommerce.transaction_id, "ORD-C4D4D66");
-  assert.equal(pushed.ecommerce.value, 237.59);
+  assert.equal(pushed.ecommerce.currency, "USD");
+  assert.equal(pushed.ecommerce.value, 219.99);
   assert.equal(pushed.ecommerce.tax, 17.6);
+  // Free shipping is a value (0), not a missing field.
+  assert.equal(pushed.ecommerce.shipping, 0);
   assert.equal(pushed.ecommerce.payment_type, "Card");
 });
 
@@ -512,4 +518,128 @@ test("ecommerce is cleared on non-commerce pushes; commerce pushes keep the null
   assert.equal("ecommerce" in view, true);
   assert.equal(view.ecommerce, undefined);
   assert.equal(model().ecommerce, undefined);
+});
+
+/* -------------------------------------------------------------------------- */
+/*  dataLayer contract for ecommerce: value, tax, shipping, item fields        */
+/* -------------------------------------------------------------------------- */
+
+interface PushedItem {
+  item_id: string;
+  item_brand: string;
+  item_category: string;
+  price: number;
+  quantity: number;
+}
+interface PushedEcommerce {
+  currency: string;
+  value?: number;
+  transaction_id?: string;
+  tax?: number;
+  shipping?: number;
+  items: PushedItem[];
+}
+
+/** Sum of price × quantity in cents, so the expectation has no float drift. */
+const pushedItemSum = (items: PushedItem[]): number =>
+  items.reduce((sum, item) => sum + Math.round(item.price * 100) * item.quantity, 0) / 100;
+
+test("ecommerce contract: value is the item sum on every event; purchase adds tax, shipping and transaction_id", () => {
+  const { service, pushes } = pipelineHarness();
+  const lamp = { ...products[0], id: "prod-1001", price: 10.99, brand: "Halo", category: "Home", categoryId: "home" };
+  const mouse = { ...products[1], id: "prod-1002", price: 59.99, brand: "Vortex", category: "Gaming", categoryId: "gaming" };
+  const catalog = [lamp, mouse];
+  const lines = [
+    { product: lamp, quantity: 3, lineTotal: 0, overStock: false },
+    { product: mouse, quantity: 1, lineTotal: 0, overStock: false },
+  ];
+  const order: Order = {
+    id: "#ORD-C4D4D66",
+    orderNumber: "ORD-C4D4D66",
+    customer: "Repro Tester",
+    email: "repro@example.test",
+    country: "India",
+    countryCode: "IN",
+    amount: 110.38,
+    status: "Processing",
+    date: "2026-10-07",
+    items: 4,
+    lineItems: lines.map(({ product, quantity }) => ({
+      productId: product.id,
+      name: product.name,
+      sku: product.sku,
+      price: product.price,
+      quantity,
+    })),
+    subtotal: 92.96,
+    tax: 7.44,
+    shipping: 9.99,
+    total: 110.39,
+    paymentMethod: "COD",
+    paymentStatus: "Pending",
+  };
+
+  service.track("commerce.view_item_list", { commerce: listCommerce(catalog, "All Products") });
+  service.track("commerce.select_item", { commerce: productCommerce(lamp, { listName: "All Products" }) });
+  service.track("commerce.view_item", { commerce: productCommerce(lamp) });
+  service.track("commerce.add_to_cart", { commerce: productCommerce(lamp, { quantity: 3 }) });
+  service.track("commerce.remove_from_cart", { commerce: productCommerce(mouse, { quantity: 2 }) });
+  service.track("commerce.view_cart", { commerce: cartCommerce(lines) });
+  service.track("commerce.begin_checkout", { commerce: { ...cartCommerce(lines), checkout_step: "begin" } });
+  service.track("commerce.add_shipping_info", { commerce: { ...cartCommerce(lines), checkout_step: "shipping" } });
+  service.track("commerce.add_payment_info", {
+    commerce: { ...cartCommerce(lines), checkout_step: "payment", payment_method: "COD" },
+  });
+  service.track("commerce.purchase", {
+    commerce: orderCommerce(order, (id) => catalog.find((product) => product.id === id)),
+  });
+
+  const commerce = pushes().filter((push) => push.ecommerce) as Array<{
+    event: string;
+    ecommerce: PushedEcommerce;
+  }>;
+  assert.deepEqual(
+    commerce.map((push) => push.event),
+    [
+      "view_item_list",
+      "select_item",
+      "view_item",
+      "add_to_cart",
+      "remove_from_cart",
+      "view_cart",
+      "begin_checkout",
+      "add_shipping_info",
+      "add_payment_info",
+      "purchase",
+    ],
+  );
+
+  const brands: Record<string, string> = { "prod-1001": "Halo", "prod-1002": "Vortex" };
+  const categories: Record<string, string> = { "prod-1001": "Home", "prod-1002": "Gaming" };
+  for (const { event, ecommerce } of commerce) {
+    assert.equal(ecommerce.currency, "USD", event);
+    assert.ok(ecommerce.items.length > 0, event);
+    for (const item of ecommerce.items) {
+      assert.equal(item.item_brand, brands[item.item_id], `${event}: item_brand of ${item.item_id}`);
+      assert.equal(item.item_category, categories[item.item_id], `${event}: item_category of ${item.item_id}`);
+    }
+    // A list view has no value; every other event's value is its items' sum.
+    if (event === "view_item_list") assert.equal(ecommerce.value, undefined, event);
+    else assert.equal(ecommerce.value, pushedItemSum(ecommerce.items), `${event}: value`);
+    if (event !== "purchase") {
+      assert.equal(ecommerce.transaction_id, undefined, event);
+      assert.equal(ecommerce.tax, undefined, event);
+      assert.equal(ecommerce.shipping, undefined, event);
+    }
+  }
+
+  const cartValue = 92.96; // 3 × 10.99 + 59.99
+  for (const event of ["view_cart", "begin_checkout", "add_shipping_info", "add_payment_info"]) {
+    assert.equal(commerce.find((push) => push.event === event)!.ecommerce.value, cartValue, event);
+  }
+  const purchase = commerce.at(-1)!.ecommerce;
+  assert.equal(purchase.value, cartValue, "purchase value excludes shipping and tax");
+  assert.equal(purchase.tax, 7.44);
+  assert.equal(purchase.shipping, 9.99);
+  assert.equal(purchase.transaction_id, "ORD-C4D4D66");
 });

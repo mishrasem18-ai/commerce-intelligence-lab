@@ -124,7 +124,10 @@ export interface CommerceItem {
 
 export interface CommerceContext {
   currency: string;
-  /** Monetary value of the event (line value, cart value, order total…). */
+  /**
+   * Sum of price × quantity of the event's items. Never includes shipping or
+   * tax: a purchase carries those in `tax` and `shipping`.
+   */
   value?: number;
   items?: CommerceItem[];
   list_name?: string;

@@ -9,6 +9,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { products } from "../data/products.ts";
 import type { Order } from "../data.ts";
+import type { CommerceItem } from "./schema.ts";
 import {
   cartCommerce,
   createOnceTracker,
@@ -76,10 +77,34 @@ test("cartCommerce totals quantities across lines", () => {
     { product: products[0], quantity: 2, lineTotal: 0, overStock: false },
     { product: products[1], quantity: 1, lineTotal: 0, overStock: false },
   ];
-  const commerce = cartCommerce(lines, 199.99);
-  assert.equal(commerce.value, 199.99);
+  const commerce = cartCommerce(lines);
   assert.equal(commerce.item_count, 3);
   assert.equal(commerce.items?.length, 2);
+});
+
+/** Sum of price × quantity in cents, so the expectation has no float drift. */
+function itemSum(items: CommerceItem[] | undefined): number {
+  const cents = (items ?? []).reduce(
+    (sum, item) => sum + Math.round(item.price * 100) * item.quantity,
+    0,
+  );
+  return cents / 100;
+}
+
+test("cart value is the sum of price × quantity: no shipping, no tax", () => {
+  const lines = [
+    { product: { ...products[0], price: 10.99 }, quantity: 1, lineTotal: 0, overStock: false },
+  ];
+  // The cart page shows 21.86 for this cart (9.99 shipping, 0.88 tax).
+  assert.equal(cartCommerce(lines).value, 10.99);
+
+  const mixed = [
+    { product: { ...products[0], price: 19.99 }, quantity: 3, lineTotal: 0, overStock: false },
+    { product: { ...products[1], price: 0.1 }, quantity: 3, lineTotal: 0, overStock: false },
+  ];
+  const commerce = cartCommerce(mixed);
+  assert.equal(commerce.value, 60.27);
+  assert.equal(commerce.value, itemSum(commerce.items));
 });
 
 /** A realistic buyer-created order INCLUDING the PII the API returns. */
@@ -128,7 +153,6 @@ test("orderCommerce maps commercial fields and excludes every PII field", () => 
   const commerce = orderCommerce(ORDER, getProduct);
   assert.equal(commerce.order_id, "AM-1042");
   assert.equal(commerce.currency, "USD");
-  assert.equal(commerce.value, 172.78);
   assert.equal(commerce.tax, 12.8);
   assert.equal(commerce.shipping, 0);
   assert.equal(commerce.payment_method, "Card");
@@ -141,6 +165,31 @@ test("orderCommerce maps commercial fields and excludes every PII field", () => 
   assert.ok(!serialized.includes("98765"), "phone must not leak");
   assert.ok(!serialized.includes("Test Lane"), "address must not leak");
   assert.ok(!serialized.includes("400001"), "postal code must not leak");
+});
+
+test("purchase value is the sum of price × quantity; tax and shipping stay separate", () => {
+  const commerce = orderCommerce(ORDER, getProduct);
+  assert.equal(commerce.value, 159.97); // 2 × 49.99 + 59.99, not the 172.78 total
+  assert.equal(commerce.value, itemSum(commerce.items));
+  assert.equal(commerce.tax, 12.8);
+  assert.equal(commerce.shipping, 0);
+
+  // The order of the live verification: one 10.99 item, total 21.86.
+  const small = orderCommerce(
+    {
+      ...ORDER,
+      lineItems: [{ ...ORDER.lineItems![0], price: 10.99, quantity: 1 }],
+      subtotal: 10.99,
+      tax: 0.88,
+      shipping: 9.99,
+      total: 21.86,
+      amount: 21.86,
+    },
+    getProduct,
+  );
+  assert.equal(small.value, 10.99);
+  assert.equal(small.tax, 0.88);
+  assert.equal(small.shipping, 9.99);
 });
 
 test("purchase items carry the catalog's brand and category, like every other commerce event", () => {
@@ -167,7 +216,7 @@ test("every commerce mapper gives every item a brand and a category", () => {
   const contexts = {
     productCommerce: productCommerce(CATALOG[0], { quantity: 2 }),
     listCommerce: listCommerce(CATALOG, "All Products"),
-    cartCommerce: cartCommerce(lines, 0),
+    cartCommerce: cartCommerce(lines),
     orderCommerce: orderCommerce(ORDER, getProduct),
   };
   for (const [mapper, commerce] of Object.entries(contexts)) {
@@ -186,6 +235,7 @@ test("an order line whose product left the catalog keeps the order's own fields"
     commerce.items?.map((item) => [item.product_id, item.name, item.price, item.quantity]),
     ORDER.lineItems!.map((line) => [line.productId, line.name, line.price, line.quantity]),
   );
+  assert.equal(commerce.value, 159.97);
 });
 
 test("purchase fires exactly once for a completed order lifecycle", () => {

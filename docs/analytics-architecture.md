@@ -349,6 +349,12 @@ When a container ID is supplied:
                                         })
 ```
 
+`ecommerce.value` is the sum of price × quantity of the push's own items
+(`itemsValue` in `lib/analytics/tracking.ts`); a list view has none. Shipping
+and tax are never part of it: `purchase` sends them as `tax` and `shipping`,
+next to `transaction_id` and `currency`. So one $10.99 item is `value: 10.99`
+from `add_to_cart` to `purchase`, while the order total is 21.86.
+
 Every pushed event also carries the page keys `page_title`, `page_type`,
 `page_path`, `page_location` — rebuilt from the scrubbed canonical path +
 query string (never `document.location`) — and `page_referrer`: the

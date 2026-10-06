@@ -29,9 +29,9 @@ export function CartView() {
     if (viewTracked.current || lines.length === 0) return;
     viewTracked.current = true;
     analytics.track("commerce.view_cart", {
-      commerce: cartCommerce(lines, totals.total),
+      commerce: cartCommerce(lines),
     });
-  }, [lines, totals]);
+  }, [lines]);
 
   const handleRemove = (product: Product, quantity: number) => {
     removeItem(product.id);

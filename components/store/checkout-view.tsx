@@ -73,9 +73,9 @@ export function CheckoutView() {
     if (beginTracked.current || !buyer || lines.length === 0) return;
     beginTracked.current = true;
     analytics.track("commerce.begin_checkout", {
-      commerce: { ...cartCommerce(lines, totals.total), checkout_step: "begin" },
+      commerce: { ...cartCommerce(lines), checkout_step: "begin" },
     });
-  }, [buyer, lines, totals]);
+  }, [buyer, lines]);
 
   // Seed contact + address defaults from the authenticated buyer (one-time).
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -188,11 +188,11 @@ export function CheckoutView() {
     // checkout's equivalent of the shipping/payment steps. Only step metadata
     // and cart contents are tracked; the address itself never enters analytics.
     analytics.track("commerce.add_shipping_info", {
-      commerce: { ...cartCommerce(lines, totals.total), checkout_step: "shipping" },
+      commerce: { ...cartCommerce(lines), checkout_step: "shipping" },
     });
     analytics.track("commerce.add_payment_info", {
       commerce: {
-        ...cartCommerce(lines, totals.total),
+        ...cartCommerce(lines),
         checkout_step: "payment",
         payment_method: method,
       },

@@ -13,10 +13,6 @@ import {
   type CommerceItem,
 } from "@/lib/analytics/schema";
 
-function roundMoney(value: number): number {
-  return Math.round(value * 100) / 100;
-}
-
 export interface ItemOptions {
   quantity?: number;
   listName?: string;
@@ -40,6 +36,15 @@ export function productToItem(product: Product, options: ItemOptions = {}): Comm
   };
 }
 
+/**
+ * An event's `value`: the sum of price × quantity of its items. Shipping and
+ * tax are never part of it; a purchase carries them in their own fields.
+ * Summed in cents, so 3 × 0.10 is 0.3 and not 0.30000000000000004.
+ */
+function itemsValue(items: CommerceItem[]): number {
+  return items.reduce((sum, item) => sum + Math.round(item.price * 100) * item.quantity, 0) / 100;
+}
+
 /** Commerce context for a single-product event (view/select/add/remove). */
 export function productCommerce(
   product: Product,
@@ -48,7 +53,7 @@ export function productCommerce(
   const item = productToItem(product, options);
   return {
     currency: ANALYTICS_CURRENCY,
-    value: roundMoney(item.price * item.quantity),
+    value: itemsValue([item]),
     items: [item],
     ...(options.listName ? { list_name: options.listName } : {}),
   };
@@ -70,15 +75,13 @@ export function listCommerce(
 }
 
 /** Commerce context for cart-level events (view_cart, begin_checkout…). */
-export function cartCommerce(
-  lines: CartDetailLine[],
-  totalValue: number,
-): CommerceContext {
+export function cartCommerce(lines: CartDetailLine[]): CommerceContext {
+  const items = lines.map((line) => productToItem(line.product, { quantity: line.quantity }));
   return {
     currency: ANALYTICS_CURRENCY,
-    value: roundMoney(totalValue),
+    value: itemsValue(items),
     item_count: lines.reduce((sum, line) => sum + line.quantity, 0),
-    items: lines.map((line) => productToItem(line.product, { quantity: line.quantity })),
+    items,
   };
 }
 
@@ -113,7 +116,7 @@ export function orderCommerce(
   return {
     currency: ANALYTICS_CURRENCY,
     order_id: order.orderNumber ?? order.id,
-    value: roundMoney(order.total ?? order.amount),
+    value: itemsValue(items),
     tax: order.tax,
     shipping: order.shipping,
     payment_method: order.paymentMethod,
