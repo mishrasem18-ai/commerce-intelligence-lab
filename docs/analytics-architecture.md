@@ -136,7 +136,12 @@ passwords, tokens, cookies, hashes, raw D1 records). Enforcement is layered:
    commercial fields; an order's email/name/address are simply never read.
 2. **Identity is pseudonymous** — the user context carries only
    `authentication_state` and the internal `customer_id`; `setUserContext`
-   drops any other field.
+   drops any other field. On a document load the root layout validates the
+   buyer's session cookie against D1 and passes that id — nothing else of the
+   buyer — to the page, where `AnalyticsIdentitySeed`
+   (`lib/store/auth-store.tsx`) sets it before the document's first event, so
+   a hard-loaded page's `page.view` already carries it. The id is in the HTML
+   of its owner's response only, and those responses are `private, no-store`.
 3. **A PII guard scrubs every envelope** (`lib/analytics/pii.ts`): forbidden
    key names (email, password, token, cookie, address…) and email-shaped
    string values are replaced with `"[redacted]"` before dispatch, and

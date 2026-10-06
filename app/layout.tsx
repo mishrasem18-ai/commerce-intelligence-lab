@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Providers } from "@/components/providers";
 import { getProducts } from "@/lib/db/products";
+import { currentBuyerSession } from "@/lib/auth/guards";
 import { RootAnalytics } from "@/components/analytics/root-analytics";
 import { STORE_SITE_NAME } from "@/lib/routes/page-titles";
 
@@ -33,13 +34,23 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // The catalog is the only D1 data this layout reads: it renders for EVERY
-  // visitor, so whatever it passes to the client stores is public. Customer
-  // and order records are loaded behind a session check instead — the full
-  // lists in the admin layout, a buyer's own through the buyer account store.
-  // If D1 is unavailable this throws (surfaced by the error boundary) rather
-  // than silently falling back to demo data.
-  const initialProducts = await getProducts();
+  // This layout renders for EVERY visitor, so the D1 data it passes to the
+  // client stores is public: the catalog. Customer and order records are
+  // loaded behind a session check instead — the full lists in the admin
+  // layout, a buyer's own through the buyer account store. If D1 is
+  // unavailable this throws (surfaced by the error boundary) rather than
+  // silently falling back to demo data.
+  //
+  // The one per-visitor value is the signed-in buyer's own opaque customer id
+  // (never the email or name), so analytics can attach it to the document's
+  // first events instead of waiting for the browser's session check. The
+  // session cookie is validated against D1; a missing, expired or forged one
+  // gives null, and a failed lookup leaves the id to that later check. Every
+  // response of this layout is `private, no-store`.
+  const [initialProducts, buyerSession] = await Promise.all([
+    getProducts(),
+    currentBuyerSession().catch(() => null),
+  ]);
 
   return (
     <html
@@ -54,7 +65,10 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Providers initialProducts={initialProducts}>
+          <Providers
+            initialProducts={initialProducts}
+            buyerCustomerId={buyerSession?.userId ?? null}
+          >
             {children}
             {/* After the page, so React runs the page's layout effects (its title
                 registration) before the tracker's in the same commit. */}

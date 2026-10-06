@@ -22,7 +22,9 @@ import type { Customer } from "@/lib/data";
  * the buyer account store (lib/store/buyer-account-store.tsx) — the buyer's own
  * record, and the only customer record the storefront holds. No customer data
  * is server-rendered into the page, so account screens never depend on a
- * snapshot that predates a just-registered buyer.
+ * snapshot that predates a just-registered buyer. The only identity the server
+ * renders is the buyer's own opaque customer id, and only analytics reads it
+ * (AnalyticsIdentitySeed below).
  */
 
 export const ADMIN_COOKIE = "cil_admin";
@@ -85,7 +87,41 @@ export function useAuth(): AuthContextValue {
   return ctx;
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+/**
+ * Gives analytics the signed-in buyer's customer id before the document's
+ * first event. The browser's session check (below) only settles after the
+ * first page.view — and after a product page's view_item — so on a hard load
+ * those events had no customer id. The root layout validates the session
+ * cookie against D1 and passes the id here.
+ *
+ * A layout effect of a component rendered BEFORE the page: React runs it
+ * ahead of the layout effects of everything after it, including the
+ * page-view tracker's. Never during render, which also runs on the server,
+ * where the analytics singleton is shared by all requests.
+ *
+ * It runs once per document. From then on this store is the authority: login,
+ * logout and the session check set the user context as before.
+ */
+function AnalyticsIdentitySeed({ customerId }: { customerId: string | null }) {
+  const seeded = React.useRef(false);
+  React.useLayoutEffect(() => {
+    if (seeded.current) return;
+    seeded.current = true;
+    if (customerId) {
+      analytics.setUserContext({ authentication_state: "authenticated", customer_id: customerId });
+    }
+  }, [customerId]);
+  return null;
+}
+
+export function AuthProvider({
+  children,
+  serverCustomerId,
+}: {
+  children: React.ReactNode;
+  /** Customer id of the request's D1-validated buyer session, or null. */
+  serverCustomerId: string | null;
+}) {
   const { identify: identifyBuyerAccount, clear: clearBuyerAccount } = useBuyerAccount();
   const [admin, setAdmin] = React.useState<AdminSession | null>(null);
   const [buyer, setBuyer] = React.useState<BuyerSession | null>(null);
@@ -316,5 +352,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      <AnalyticsIdentitySeed customerId={serverCustomerId} />
+      {children}
+    </AuthContext.Provider>
+  );
 }

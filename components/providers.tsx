@@ -21,16 +21,21 @@ const LEGACY_STORAGE_KEYS = ["cil.orders.v1", "cil.customers.v1"];
  * buyer's own account and the auth state. The catalog is read from D1 on the
  * server (in the root layout) and passed in here. These providers render for
  * every visitor, so nothing but public data may be passed to them — the full
- * order and customer lists are mounted only inside the admin layout.
+ * order and customer lists are mounted only inside the admin layout. The one
+ * exception is `buyerCustomerId`: the signed-in buyer's own opaque id, which
+ * the server sends to that buyer only, for analytics.
  * Order matters: AuthProvider hands the signed-in buyer's profile to
  * BuyerAccountProvider, so it must be nested inside it.
  */
 export function Providers({
   children,
   initialProducts,
+  buyerCustomerId,
 }: {
   children: React.ReactNode;
   initialProducts: Product[];
+  /** Customer id of the D1-validated buyer session of this request, or null. */
+  buyerCustomerId: string | null;
 }) {
   React.useEffect(() => {
     try {
@@ -45,7 +50,7 @@ export function Providers({
       <ProductsProvider initial={initialProducts}>
         <CartProvider>
           <BuyerAccountProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider serverCustomerId={buyerCustomerId}>{children}</AuthProvider>
           </BuyerAccountProvider>
         </CartProvider>
       </ProductsProvider>
