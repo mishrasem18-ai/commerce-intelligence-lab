@@ -5,9 +5,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { analytics } from "@/lib/analytics";
 import {
   decidePageView,
+  findNavigationMarker,
   locationAfter,
-  markerMatchesUrl,
-  readNavigationMarker,
   type TrackedLocation,
 } from "@/lib/analytics/navigation";
 import { resolvePageContext } from "@/lib/analytics/page-context";
@@ -24,9 +23,12 @@ import {
  * deterministically by `decidePageView` (lib/analytics/navigation.ts):
  *  - identical URLs never re-track (Strict Mode double effects, hydration,
  *    remounts, repeated clicks on the current URL);
- *  - same-pathname `router.replace` query refinements (shop search
- *    keystrokes, filter/sort/pagination) are page STATE, not navigations —
- *    they are represented by search.submit / view_item_list instead;
+ *  - same-pathname replace refinements (shop search keystrokes via
+ *    `history.replaceState`, filter/sort/pagination via `router.replace`)
+ *    are page STATE, not navigations — they are represented by
+ *    search.submit / view_item_list instead. The transition type is looked
+ *    up by committed URL in the recorded marker list (never a single slot,
+ *    which overlapping transitions on a slow network would overwrite);
  *  - pushes, back/forward traversals, pathname changes and initial loads are
  *    always tracked.
  *
@@ -61,9 +63,7 @@ export function PageViewTracker() {
 
   React.useLayoutEffect(() => {
     const url = queryString ? `${pathname}?${queryString}` : pathname;
-    const marker = readNavigationMarker();
-    const navigationType =
-      marker && markerMatchesUrl(marker.url, url) ? marker.type : "unknown";
+    const navigationType = findNavigationMarker(url) ?? "unknown";
     const decision = decidePageView({
       last: lastTracked,
       nextPathname: pathname,

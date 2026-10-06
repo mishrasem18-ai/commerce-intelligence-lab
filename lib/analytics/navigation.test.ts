@@ -8,10 +8,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   decidePageView,
+  findNavigationMarker,
   locationAfter,
   markerMatchesUrl,
+  MAX_NAVIGATION_MARKERS,
   NAVIGATION_MARKER_KEY,
-  readNavigationMarker,
+  recordNavigationMarker,
   type TrackedLocation,
 } from "./navigation.ts";
 
@@ -140,14 +142,57 @@ test("marker matching accepts full hrefs and plain paths; garbage fails closed",
   assert.equal(markerMatchesUrl("::not a url::", "/shop"), false);
 });
 
-test("readNavigationMarker validates shape and rejects tampered values", () => {
+test("recorded markers are found by committed URL; garbage and unknown URLs fail closed", () => {
   const win: Record<string, unknown> = {};
-  assert.equal(readNavigationMarker(win), null);
-  win[NAVIGATION_MARKER_KEY] = { url: "/shop", type: "replace" };
-  assert.deepEqual(readNavigationMarker(win), { url: "/shop", type: "replace" });
+  assert.equal(findNavigationMarker("/shop", win), null);
+  recordNavigationMarker("/shop?q=lamp", "replace", win);
+  assert.equal(findNavigationMarker("/shop?q=lamp", win), "replace");
+  assert.equal(findNavigationMarker("/shop", win), null, "a different URL has no marker");
+  // Full hrefs match committed pathname + search.
+  recordNavigationMarker("https://example.com/cart", "push", win);
+  assert.equal(findNavigationMarker("/cart", win), "push");
+  // Tampered slot values are ignored, never thrown on.
   win[NAVIGATION_MARKER_KEY] = { url: 42, type: "evil" };
-  assert.equal(readNavigationMarker(win), null);
-  assert.equal(readNavigationMarker(null), null);
+  assert.equal(findNavigationMarker("/cart", win), null);
+  win[NAVIGATION_MARKER_KEY] = [{ url: "/cart", type: "evil" }, "junk", null];
+  assert.equal(findNavigationMarker("/cart", win), null);
+  assert.equal(findNavigationMarker("/cart", null), null);
+  recordNavigationMarker("/cart", "push", null); // no window: a no-op
+});
+
+test("overlapping transitions keep every marker: a slow earlier commit still resolves (Issue 1)", () => {
+  // Shop search keystrokes on a slow network: four router.replace calls start
+  // before the first one commits. With a single slot the first three would be
+  // overwritten and their commits would count as navigations.
+  const win: Record<string, unknown> = {};
+  for (const url of ["/shop?q=l", "/shop?q=la", "/shop?q=lam", "/shop?q=lamp"]) {
+    recordNavigationMarker(url, "replace", win);
+  }
+  const tracked = simulate(
+    [
+      { pathname: "/shop", url: "/shop", navigationType: "initial" as const },
+      ...["/shop?q=l", "/shop?q=la", "/shop?q=lam", "/shop?q=lamp"].map((url) => ({
+        pathname: "/shop",
+        url,
+        navigationType: findNavigationMarker(url, win) ?? ("unknown" as const),
+      })),
+    ],
+  );
+  assert.deepEqual(tracked, ["/shop"], "typing never produces a page.view");
+});
+
+test("the newest marker wins for a URL recorded twice; the list is bounded", () => {
+  const win: Record<string, unknown> = {};
+  recordNavigationMarker("/shop?category=home", "replace", win);
+  recordNavigationMarker("/shop?category=home", "push", win);
+  assert.equal(findNavigationMarker("/shop?category=home", win), "push");
+  for (let i = 0; i < MAX_NAVIGATION_MARKERS + 5; i += 1) {
+    recordNavigationMarker(`/product/p${i}`, "push", win);
+  }
+  const list = win[NAVIGATION_MARKER_KEY] as unknown[];
+  assert.equal(list.length, MAX_NAVIGATION_MARKERS, "oldest entries are dropped");
+  assert.equal(findNavigationMarker("/shop?category=home", win), null, "evicted");
+  assert.equal(findNavigationMarker(`/product/p${MAX_NAVIGATION_MARKERS + 4}`, win), "push");
 });
 
 test("a push back to the pre-refinement URL is a navigation, not a duplicate", () => {
