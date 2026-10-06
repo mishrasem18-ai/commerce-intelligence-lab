@@ -3,6 +3,7 @@ import {
   AnalyticsDebuggerLink,
   CookieSettingsLink,
 } from "@/components/analytics/analytics-footer-links";
+import { BuyerLink } from "@/components/store/buyer-link";
 import { StoreBrand } from "@/components/store/store-brand";
 import { PRIMARY_NAV_CATEGORIES } from "@/lib/catalog/categories";
 import { categoryHref } from "@/lib/catalog/shop-query";
@@ -38,14 +39,15 @@ export function StoreFooter() {
           <p className="mb-3 text-sm font-semibold text-foreground">Account</p>
           <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
             <li>
-              <Link href="/account" className="transition-colors hover:text-foreground">
+              {/* Protected routes: no prefetch while signed out (see BuyerLink). */}
+              <BuyerLink href="/account" className="transition-colors hover:text-foreground">
                 My Account
-              </Link>
+              </BuyerLink>
             </li>
             <li>
-              <Link href="/account/orders" className="transition-colors hover:text-foreground">
+              <BuyerLink href="/account/orders" className="transition-colors hover:text-foreground">
                 My Orders
-              </Link>
+              </BuyerLink>
             </li>
             <li>
               <Link href="/cart" className="transition-colors hover:text-foreground">

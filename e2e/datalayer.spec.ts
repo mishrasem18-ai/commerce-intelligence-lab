@@ -61,9 +61,8 @@ test("login → logout: the next page_view clears customer_id", async ({ page, c
   await form.getByRole("button", { name: "Sign In" }).click();
   await expect(page).toHaveURL(/\/account$/);
 
-  // The redirect to /account is a document load, so GTM's data model starts
-  // over, and the session check sets the id after that page_view. One in-app
-  // navigation puts the id into this page's data model.
+  // The redirect to /account is an in-app navigation (e2e/auth-navigation.spec.ts),
+  // so this document's data model carries the login and every page since.
   const signedInId = () =>
     page.evaluate(
       () =>
@@ -74,7 +73,7 @@ test("login → logout: the next page_view clears customer_id", async ({ page, c
   const customerId = await signedInId();
   await page.locator("main").getByRole("link", { name: "My Orders" }).click();
   await expect(page).toHaveURL(/\/account\/orders$/);
-  await expectPageViews(page, 2);
+  await expectPageViews(page, 3);
 
   await page.locator("main").getByRole("button", { name: "Logout" }).click();
   await expect(page).toHaveURL((url) => url.pathname === "/");
@@ -84,8 +83,11 @@ test("login → logout: the next page_view clears customer_id", async ({ page, c
       pushes = await dataLayer(page);
       return pushes.filter((p) => p.event === "page_view").map((p) => p.page_path);
     })
-    .toEqual(["/account", "/account/orders", "/"]);
+    .toEqual(["/login", "/account", "/account/orders", "/"]);
 
+  const login = pushes.find((p) => p.event === "page_view" && p.page_path === "/login");
+  expectCleared(login, "customer_id");
+  expect(pushes.find((p) => p.event === "login")?.customer_id).toBe(customerId);
   const orders = pushes.find((p) => p.event === "page_view" && p.page_path === "/account/orders");
   expect(orders?.customer_id).toBe(customerId);
   const logoutIndex = pushes.findIndex((p) => p.event === "user.logout");

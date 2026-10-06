@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BuyerLink } from "@/components/store/buyer-link";
 import { CheckCircle2, PackageX } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { BuyerOrderBody } from "@/components/store/buyer-order-body";
@@ -57,9 +58,9 @@ export function OrderConfirmationView({ slug }: { slug: string }) {
           <Link href="/shop" className={buttonVariants({ variant: "outline" })}>
             Continue Shopping
           </Link>
-          <Link href="/account/orders" className={buttonVariants()}>
+          <BuyerLink href="/account/orders" className={buttonVariants()}>
             View My Orders
-          </Link>
+          </BuyerLink>
         </div>
       </div>
 
