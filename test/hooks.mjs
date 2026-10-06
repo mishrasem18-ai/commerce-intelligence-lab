@@ -7,6 +7,13 @@ export async function resolve(specifier, context, next) {
   if (specifier === "server-only") {
     return { url: "data:text/javascript,export%20%7B%7D", shortCircuit: true };
   }
+  // `cookies()` only works inside a Next request. Tests set the request's
+  // cookies through the stub instead (test/next-headers-stub.mjs).
+  if (specifier === "next/headers") {
+    return { url: new URL("test/next-headers-stub.mjs", ROOT).href, shortCircuit: true };
+  }
+  // Route handlers import `next/server`; Node's ESM resolver needs the file name.
+  if (specifier === "next/server") return next("next/server.js", context);
   // Mirror the tsconfig "@/*" -> "./*" path alias (Node has no notion of it).
   if (specifier.startsWith("@/")) {
     const rel = specifier.slice(2) + (/\.[a-z]+$/.test(specifier) ? "" : ".ts");

@@ -1,19 +1,28 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getBuyerSession, BUYER_COOKIE } from "@/lib/auth/session";
+import { currentAdminSession } from "@/lib/auth/guards";
 import { getProductById } from "@/lib/db/products";
-import { createOrder, getOrders } from "@/lib/db/orders";
+import { createOrder } from "@/lib/db/orders";
+import { getOrdersForAdmin } from "@/lib/db/admin-data";
 import { computeOrderTotals } from "@/lib/commerce";
 import type { Order, PaymentMethod, PaymentStatus } from "@/lib/data";
 
-// D1-backed orders read (admin list).
+const NO_STORE = { "cache-control": "no-store" };
+
+// The full order list — admin only. The session is validated against D1 on
+// every request; a buyer session is not an admin session. A buyer reads their
+// own orders from /api/account/orders.
 export async function GET() {
+  if (!(await currentAdminSession())) {
+    return NextResponse.json({ error: "Not authenticated." }, { status: 401, headers: NO_STORE });
+  }
   try {
-    const orders = await getOrders();
-    return NextResponse.json({ orders });
+    const orders = await getOrdersForAdmin();
+    return NextResponse.json({ orders }, { headers: NO_STORE });
   } catch (error) {
     console.error("[api/orders GET] D1 read failed:", error);
-    return NextResponse.json({ error: "Failed to load orders" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to load orders" }, { status: 500, headers: NO_STORE });
   }
 }
 
