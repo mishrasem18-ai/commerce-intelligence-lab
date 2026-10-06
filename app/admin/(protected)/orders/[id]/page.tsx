@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { routeMetadata } from "@/lib/routes/page-titles";
 import { OrderDetailView } from "@/components/orders/order-detail-view";
-import { getOrderByNumber } from "@/lib/db/orders";
+import { currentAdminSession } from "@/lib/auth/guards";
+import { getOrderForAdmin } from "@/lib/db/admin-data";
 
 // Orders are served on demand from D1; buyer-created orders (client overlay)
 // resolve via the store when not present in D1.
@@ -15,6 +17,7 @@ export default async function OrderDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  if (!(await currentAdminSession())) redirect("/admin/login");
   const { id } = await params;
-  return <OrderDetailView slug={id} initialOrder={await getOrderByNumber(id)} />;
+  return <OrderDetailView slug={id} initialOrder={await getOrderForAdmin(id)} />;
 }

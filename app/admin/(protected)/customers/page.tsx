@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { routeMetadata } from "@/lib/routes/page-titles";
 import { Crown, Repeat, UserPlus, Users } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
@@ -6,14 +7,16 @@ import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/cards/stat-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { CustomersView } from "@/components/tables/customers-view";
-import { getCustomers } from "@/lib/db/customers";
+import { currentAdminSession } from "@/lib/auth/guards";
+import { getCustomersForAdmin } from "@/lib/db/admin-data";
 import { formatNumber, formatPercent } from "@/lib/utils";
 
 export const metadata: Metadata = routeMetadata("admin_customers");
 export const dynamic = "force-dynamic";
 
 export default async function CustomersPage() {
-  const customers = await getCustomers();
+  if (!(await currentAdminSession())) redirect("/admin/login");
+  const customers = await getCustomersForAdmin();
   const vip = customers.filter((c) => c.status === "VIP").length;
   const newCustomers = customers.filter((c) => c.status === "New").length;
 

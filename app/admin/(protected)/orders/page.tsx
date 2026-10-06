@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { routeMetadata } from "@/lib/routes/page-titles";
 import { Receipt, RotateCcw, ShoppingCart, Wallet } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
@@ -6,14 +7,16 @@ import { StatCard } from "@/components/cards/stat-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { OrdersView } from "@/components/tables/orders-view";
 import { OrdersHeaderActions } from "@/components/orders/orders-header-actions";
-import { getOrders } from "@/lib/db/orders";
+import { currentAdminSession } from "@/lib/auth/guards";
+import { getOrdersForAdmin } from "@/lib/db/admin-data";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export const metadata: Metadata = routeMetadata("admin_orders");
 export const dynamic = "force-dynamic";
 
 export default async function OrdersPage() {
-  const orders = await getOrders();
+  if (!(await currentAdminSession())) redirect("/admin/login");
+  const orders = await getOrdersForAdmin();
   const revenue = orders.reduce((sum, o) => sum + o.amount, 0);
   const aov = revenue / orders.length;
   const refunds = orders.filter((o) => o.status === "Refunded").length;
