@@ -236,7 +236,9 @@ export function CheckoutView() {
 
       // Canonical purchase — exactly once per created order (see tracker above).
       if (purchaseTracked.first(data.order.id)) {
-        analytics.track("commerce.purchase", { commerce: orderCommerce(data.order) });
+        analytics.track("commerce.purchase", {
+          commerce: orderCommerce(data.order, getProduct),
+        });
       }
 
       // Mirror the D1-created order into the buyer's own store for immediate

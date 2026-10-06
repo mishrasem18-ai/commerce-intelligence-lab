@@ -86,8 +86,30 @@ export function cartCommerce(
  * Commerce context from a COMPLETED order (the D1-created order returned by
  * POST /api/orders). Deliberately maps only non-PII commercial fields — the
  * order's email, customer name and shipping address never enter the payload.
+ *
+ * An order line has no brand or category, so they come from the catalog
+ * (`getProduct`, the products store's lookup): the same product object
+ * view_item and add_to_cart are built from. Id, name, SKU, price and quantity
+ * stay the server's.
  */
-export function orderCommerce(order: Order): CommerceContext {
+export function orderCommerce(
+  order: Order,
+  getProduct: (id: string) => Product | undefined,
+): CommerceContext {
+  const items = (order.lineItems ?? []).map((li): CommerceItem => {
+    const product = getProduct(li.productId);
+    return {
+      product_id: li.productId,
+      sku: li.sku,
+      name: li.name,
+      brand: product?.brand ?? "",
+      category: product?.category ?? "",
+      category_id: product?.categoryId ?? "",
+      price: li.price,
+      quantity: li.quantity,
+      currency: ANALYTICS_CURRENCY,
+    };
+  });
   return {
     currency: ANALYTICS_CURRENCY,
     order_id: order.orderNumber ?? order.id,
@@ -95,18 +117,8 @@ export function orderCommerce(order: Order): CommerceContext {
     tax: order.tax,
     shipping: order.shipping,
     payment_method: order.paymentMethod,
-    item_count: (order.lineItems ?? []).reduce((sum, li) => sum + li.quantity, 0),
-    items: (order.lineItems ?? []).map((li) => ({
-      product_id: li.productId,
-      sku: li.sku,
-      name: li.name,
-      brand: "",
-      category: "",
-      category_id: "",
-      price: li.price,
-      quantity: li.quantity,
-      currency: ANALYTICS_CURRENCY,
-    })),
+    item_count: items.reduce((sum, item) => sum + item.quantity, 0),
+    items,
   };
 }
 

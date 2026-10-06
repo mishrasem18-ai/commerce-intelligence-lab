@@ -344,7 +344,8 @@ When a container ID is supplied:
   commerce.items[0].product_id  →         event: "add_to_cart",
                                           ecommerce: { currency, value,
                                             items: [{ item_id, item_name,
-                                                      item_brand, price, quantity }] }
+                                                      item_brand, item_category,
+                                                      price, quantity }] }
                                         })
 ```
 
@@ -399,7 +400,7 @@ never appear.
 | Checkout reached | `commerce.begin_checkout` | `checkout-view.tsx` (signed-in + items, once) |
 | Address complete | `commerce.add_shipping_info` | `checkout-view.tsx` (address itself never tracked) |
 | Payment chosen | `commerce.add_payment_info` | `checkout-view.tsx` (method only) |
-| Order created | `commerce.purchase` | `checkout-view.tsx` — fires **only** in the successful `/api/orders` response branch, deduped by order id (never on page load, failure, re-render or refresh) |
+| Order created | `commerce.purchase` | `checkout-view.tsx` — fires **only** in the successful `/api/orders` response branch, deduped by order id (never on page load, failure, re-render or refresh). Items are the server's order lines; an order line has no brand or category, so `orderCommerce` takes them from the catalog, like every other commerce event |
 | Signup/Login/Logout | `user.sign_up` / `user.login` / `user.logout` | `lib/store/auth-store.tsx` (identity = internal customer id only) |
 | Consent | `consent.banner_view` / `consent.update` | `consent-manager.tsx` / `analytics.updateConsent` |
 

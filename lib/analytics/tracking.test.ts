@@ -117,9 +117,17 @@ const ORDER: Order = {
   paymentStatus: "Paid",
 };
 
+/** The catalog as the checkout sees it: the order's two products, by id. */
+const CATALOG = [
+  { ...products[0], id: "prod-1001", brand: "Halo", category: "Home", categoryId: "home" },
+  { ...products[1], id: "prod-1002", brand: "Vortex", category: "Gaming", categoryId: "gaming" },
+];
+const getProduct = (id: string) => CATALOG.find((product) => product.id === id);
+
 test("orderCommerce maps commercial fields and excludes every PII field", () => {
-  const commerce = orderCommerce(ORDER);
+  const commerce = orderCommerce(ORDER, getProduct);
   assert.equal(commerce.order_id, "AM-1042");
+  assert.equal(commerce.currency, "USD");
   assert.equal(commerce.value, 172.78);
   assert.equal(commerce.tax, 12.8);
   assert.equal(commerce.shipping, 0);
@@ -133,6 +141,51 @@ test("orderCommerce maps commercial fields and excludes every PII field", () => 
   assert.ok(!serialized.includes("98765"), "phone must not leak");
   assert.ok(!serialized.includes("Test Lane"), "address must not leak");
   assert.ok(!serialized.includes("400001"), "postal code must not leak");
+});
+
+test("purchase items carry the catalog's brand and category, like every other commerce event", () => {
+  const items = orderCommerce(ORDER, getProduct).items ?? [];
+  assert.equal(items.length, 2);
+  items.forEach((item, index) => {
+    const line = ORDER.lineItems![index];
+    // What view_item / add_to_cart send for the same product.
+    const viewed = productToItem(getProduct(line.productId)!);
+    assert.equal(item.brand, viewed.brand);
+    assert.equal(item.category, viewed.category);
+    assert.equal(item.category_id, viewed.category_id);
+    // Id, price and quantity are the server's order line.
+    assert.equal(item.product_id, line.productId);
+    assert.equal(item.name, line.name);
+    assert.equal(item.sku, line.sku);
+    assert.equal(item.price, line.price);
+    assert.equal(item.quantity, line.quantity);
+  });
+});
+
+test("every commerce mapper gives every item a brand and a category", () => {
+  const lines = CATALOG.map((product) => ({ product, quantity: 2, lineTotal: 0, overStock: false }));
+  const contexts = {
+    productCommerce: productCommerce(CATALOG[0], { quantity: 2 }),
+    listCommerce: listCommerce(CATALOG, "All Products"),
+    cartCommerce: cartCommerce(lines, 0),
+    orderCommerce: orderCommerce(ORDER, getProduct),
+  };
+  for (const [mapper, commerce] of Object.entries(contexts)) {
+    assert.ok((commerce.items ?? []).length > 0, mapper);
+    for (const item of commerce.items ?? []) {
+      assert.ok(item.brand, `${mapper}: brand of ${item.product_id}`);
+      assert.ok(item.category, `${mapper}: category of ${item.product_id}`);
+      assert.ok(item.category_id, `${mapper}: category_id of ${item.product_id}`);
+    }
+  }
+});
+
+test("an order line whose product left the catalog keeps the order's own fields", () => {
+  const commerce = orderCommerce(ORDER, () => undefined);
+  assert.deepEqual(
+    commerce.items?.map((item) => [item.product_id, item.name, item.price, item.quantity]),
+    ORDER.lineItems!.map((line) => [line.productId, line.name, line.price, line.quantity]),
+  );
 });
 
 test("purchase fires exactly once for a completed order lifecycle", () => {
@@ -155,7 +208,7 @@ test("purchase fires exactly once for a completed order lifecycle", () => {
   const purchaseTracked = createOnceTracker();
   const onOrderCreated = (order: Order) => {
     if (purchaseTracked.first(order.id)) {
-      service.track("commerce.purchase", { commerce: orderCommerce(order) });
+      service.track("commerce.purchase", { commerce: orderCommerce(order, getProduct) });
     }
   };
 
@@ -192,7 +245,7 @@ test("failed order creation emits no purchase (trigger is the success branch onl
   const purchaseTracked = createOnceTracker();
   const onOrderResponse = (ok: boolean, order: Order | null) => {
     if (ok && order && purchaseTracked.first(order.id)) {
-      service.track("commerce.purchase", { commerce: orderCommerce(order) });
+      service.track("commerce.purchase", { commerce: orderCommerce(order, getProduct) });
     }
   };
   onOrderResponse(false, null);
