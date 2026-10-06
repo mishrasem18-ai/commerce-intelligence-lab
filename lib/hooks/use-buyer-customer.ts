@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/store/auth-store";
-import { useCustomers } from "@/lib/store/customers-store";
+import { useBuyerAccount } from "@/lib/store/buyer-account-store";
 import { resolveAccountState, type AccountState } from "@/lib/auth/buyer-state";
 import type { Customer } from "@/lib/data";
 
@@ -18,11 +18,10 @@ export function useBuyerCustomer(): {
   refresh: () => Promise<void>;
 } {
   const { buyer, buyerStatus, refreshBuyer } = useAuth();
-  const { getCustomer, hydrated: customersHydrated } = useCustomers();
-  const customer = buyer ? getCustomer(buyer.customerId) : undefined;
+  const { customer: profile } = useBuyerAccount();
+  const customer = buyer && profile?.id === buyer.customerId ? profile : undefined;
   const state = resolveAccountState({
     status: buyerStatus,
-    customersHydrated,
     hasBuyer: Boolean(buyer),
     hasCustomer: Boolean(customer),
   });

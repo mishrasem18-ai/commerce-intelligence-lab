@@ -5,6 +5,7 @@ import { ChevronRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { OrderStatusBadge } from "@/components/tables/order-status-badge";
 import { BuyerOrderBody } from "@/components/store/buyer-order-body";
+import { AccountStateNotice } from "@/components/store/account-state-notice";
 import { useBuyerOrder } from "@/lib/hooks/use-buyer-order";
 
 export function BuyerOrderDetailView({ slug }: { slug: string }) {
@@ -12,6 +13,10 @@ export function BuyerOrderDetailView({ slug }: { slug: string }) {
 
   if (result.status === "loading") {
     return <p className="text-sm text-muted-foreground">Loading…</p>;
+  }
+
+  if (result.status === "error") {
+    return <AccountStateNotice state="error" onRetry={result.retry} />;
   }
 
   if (result.status !== "ok") {

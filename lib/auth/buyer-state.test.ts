@@ -15,10 +15,11 @@ import assert from "node:assert/strict";
 import {
   resolveAccountState,
   mergeBuyerCustomer,
+  mergeBuyerOrders,
   customerNeedsUpdate,
   type BuyerAuthStatus,
 } from "./buyer-state.ts";
-import type { Customer } from "../data.ts";
+import type { Customer, Order } from "../data.ts";
 
 const CUSTOMER: Customer = {
   id: "C-ABC123",
@@ -41,7 +42,6 @@ test("authenticated buyer with a profile is ready right away", () => {
   assert.equal(
     resolveAccountState({
       status: "authenticated",
-      customersHydrated: true,
       hasBuyer: true,
       hasCustomer: true,
     }),
@@ -54,7 +54,6 @@ test("authenticated buyer with a profile is ready right away", () => {
 test("authenticated buyer with a missing profile resolves to error, never loading", () => {
   const state = resolveAccountState({
     status: "authenticated",
-    customersHydrated: true,
     hasBuyer: true,
     hasCustomer: false,
   });
@@ -67,7 +66,6 @@ test("unauthenticated session resolves to unauthenticated", () => {
   assert.equal(
     resolveAccountState({
       status: "unauthenticated",
-      customersHydrated: true,
       hasBuyer: false,
       hasCustomer: false,
     }),
@@ -77,11 +75,10 @@ test("unauthenticated session resolves to unauthenticated", () => {
 
 // 12. A failing /api/auth/session (network/5xx) surfaces as an error state with
 // a retry — it can never leave the screen loading forever.
-test("session API failure resolves to error even before the stores hydrate", () => {
+test("session API failure resolves to error", () => {
   assert.equal(
     resolveAccountState({
       status: "error",
-      customersHydrated: false,
       hasBuyer: false,
       hasCustomer: false,
     }),
@@ -93,26 +90,15 @@ test("loading is only reported while the session request is in flight", () => {
   assert.equal(
     resolveAccountState({
       status: "loading",
-      customersHydrated: true,
       hasBuyer: false,
       hasCustomer: false,
     }),
     "loading",
   );
-  assert.equal(
-    resolveAccountState({
-      status: "authenticated",
-      customersHydrated: false,
-      hasBuyer: true,
-      hasCustomer: true,
-    }),
-    "loading",
-    "still waiting on the customer store",
-  );
 });
 
-// Exhaustive safety net: once the session has settled AND the stores are
-// hydrated, no combination of inputs may return "loading".
+// Exhaustive safety net: once the session has settled, no combination of
+// inputs may return "loading".
 test("no settled input combination can produce an infinite loading state", () => {
   const statuses: BuyerAuthStatus[] = ["authenticated", "unauthenticated", "error"];
   for (const status of statuses) {
@@ -120,7 +106,6 @@ test("no settled input combination can produce an infinite loading state", () =>
       for (const hasCustomer of [true, false]) {
         const state = resolveAccountState({
           status,
-          customersHydrated: true,
           hasBuyer,
           hasCustomer,
         });
@@ -174,4 +159,38 @@ test("server fields win over a stale local copy", () => {
   assert.equal(merged.orders, 3);
   assert.equal(merged.spent, 120.5);
   assert.equal(customerNeedsUpdate(stale, fresh), true);
+});
+
+const order = (id: string, status: Order["status"] = "Processing"): Order => ({
+  id,
+  orderNumber: id.replace(/^#/, ""),
+  customerId: CUSTOMER.id,
+  customer: CUSTOMER.name,
+  email: CUSTOMER.email,
+  country: "India",
+  countryCode: "IN",
+  amount: 20.79,
+  status,
+  date: "2026-10-01",
+  items: 1,
+});
+
+// The order mirrored from checkout must survive a list that was requested
+// before the order existed — otherwise the confirmation page would lose it.
+test("an order the server list does not contain yet stays in front", () => {
+  const merged = mergeBuyerOrders([order("#ORD-NEW")], [order("#ORD-OLD")]);
+  assert.deepEqual(merged.map((o) => o.id), ["#ORD-NEW", "#ORD-OLD"]);
+});
+
+test("the server's copy of an order replaces the browser's, once", () => {
+  const merged = mergeBuyerOrders(
+    [order("#ORD-1", "Processing")],
+    [order("#ORD-1", "Shipped"), order("#ORD-0")],
+  );
+  assert.deepEqual(merged.map((o) => `${o.id}:${o.status}`), ["#ORD-1:Shipped", "#ORD-0:Processing"]);
+});
+
+test("mirroring the same order twice keeps one copy", () => {
+  const merged = mergeBuyerOrders([order("#ORD-1"), order("#ORD-1"), order("#ORD-0")], []);
+  assert.deepEqual(merged.map((o) => o.id), ["#ORD-1", "#ORD-0"]);
 });

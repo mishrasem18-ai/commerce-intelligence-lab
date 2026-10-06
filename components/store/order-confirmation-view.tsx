@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { BuyerLink } from "@/components/store/buyer-link";
 import { CheckCircle2, PackageX } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { BuyerOrderBody } from "@/components/store/buyer-order-body";
 import { useBuyerOrder } from "@/lib/hooks/use-buyer-order";
 import { formatCurrency } from "@/lib/utils";
@@ -15,6 +15,19 @@ export function OrderConfirmationView({ slug }: { slug: string }) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center text-sm text-muted-foreground">
         Loading order…
+      </div>
+    );
+  }
+
+  if (result.status === "error") {
+    return (
+      <div className="mx-auto flex min-h-[50vh] w-full max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
+        <p className="text-sm text-muted-foreground">
+          We couldn&apos;t load this order. Please check your connection and try again.
+        </p>
+        <Button size="sm" onClick={result.retry}>
+          Try again
+        </Button>
       </div>
     );
   }

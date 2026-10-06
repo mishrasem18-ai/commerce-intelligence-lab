@@ -8,7 +8,7 @@ import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { OrderStatusBadge } from "@/components/tables/order-status-badge";
 import { AccountStateNotice } from "@/components/store/account-state-notice";
 import { useBuyerCustomer } from "@/lib/hooks/use-buyer-customer";
-import { useOrders } from "@/lib/store/orders-store";
+import { useBuyerOrders } from "@/lib/hooks/use-buyer-orders";
 import type { PaymentStatus } from "@/lib/data";
 import { formatCurrency } from "@/lib/utils";
 
@@ -20,7 +20,7 @@ const paymentVariant: Record<PaymentStatus, BadgeProps["variant"]> = {
 
 export function BuyerOrdersList() {
   const { customer, state, refresh } = useBuyerCustomer();
-  const { orders } = useOrders();
+  const { orders, status: ordersStatus, reload } = useBuyerOrders();
 
   if (state !== "ready" || !customer) {
     return (
@@ -34,6 +34,19 @@ export function BuyerOrdersList() {
   const myOrders = orders
     .filter((o) => o.customerId === customer.id)
     .sort((a, b) => (b.createdAt ?? b.date).localeCompare(a.createdAt ?? a.date));
+
+  // "No orders yet" is only true once the server has answered.
+  if (myOrders.length === 0 && ordersStatus !== "ready") {
+    return (
+      <AccountStateNotice
+        state={ordersStatus === "error" ? "error" : "loading"}
+        onRetry={() => {
+          void refresh();
+          reload();
+        }}
+      />
+    );
+  }
 
   if (myOrders.length === 0) {
     return (

@@ -14,7 +14,7 @@ import {
 } from "@/components/store/address-fields";
 import { AccountStateNotice } from "@/components/store/account-state-notice";
 import { useBuyerCustomer } from "@/lib/hooks/use-buyer-customer";
-import { useCustomers } from "@/lib/store/customers-store";
+import { useBuyerAccount } from "@/lib/store/buyer-account-store";
 import type { Address } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +37,7 @@ function newAddressId() {
 
 export function AddressesManager() {
   const { customer, state, refresh } = useBuyerCustomer();
-  const { updateCustomer } = useCustomers();
+  const { updateCustomer } = useBuyerAccount();
   const { toast } = useToast();
   const [mode, setMode] = React.useState<"list" | "add" | "edit">("list");
   const [editingId, setEditingId] = React.useState<string | null>(null);
@@ -70,7 +70,7 @@ export function AddressesManager() {
     setMode("edit");
   };
 
-  const persist = (next: Address[]) => updateCustomer(customer.id, { addresses: next });
+  const persist = (next: Address[]) => updateCustomer({ addresses: next });
 
   const save = (event: React.FormEvent) => {
     event.preventDefault();

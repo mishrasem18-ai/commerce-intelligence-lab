@@ -13,11 +13,11 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { AccountStateNotice } from "@/components/store/account-state-notice";
 import { useBuyerCustomer } from "@/lib/hooks/use-buyer-customer";
-import { useCustomers } from "@/lib/store/customers-store";
+import { useBuyerAccount } from "@/lib/store/buyer-account-store";
 
 export function BuyerProfileForm() {
   const { customer, state, refresh } = useBuyerCustomer();
-  const { updateCustomer } = useCustomers();
+  const { updateCustomer } = useBuyerAccount();
   const { toast } = useToast();
   const [firstName, setFirstName] = React.useState("");
   const [lastName, setLastName] = React.useState("");
@@ -47,7 +47,7 @@ export function BuyerProfileForm() {
       toast({ variant: "error", title: "First and last name are required." });
       return;
     }
-    updateCustomer(customer.id, {
+    updateCustomer({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       mobile: mobile.trim(),

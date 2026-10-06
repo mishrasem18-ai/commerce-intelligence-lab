@@ -1,4 +1,4 @@
-import type { Customer } from "@/lib/data";
+import type { Customer, Order } from "@/lib/data";
 
 /*
  * Pure (framework-free) rules for the buyer auth/account state machine.
@@ -21,20 +21,19 @@ export type AccountState = "loading" | "ready" | "unauthenticated" | "error";
 /**
  * Decide what an account screen renders.
  *
- * `loading` is only ever returned while something is genuinely still in flight;
- * once the session request has settled, every input combination maps to a
- * terminal state. A signed-in buyer whose profile is missing from the customer
+ * `loading` is only ever returned while the session request is still in
+ * flight; once it has settled, every input combination maps to a terminal
+ * state. A signed-in buyer whose profile is missing from the buyer account
  * store is an `error` (recoverable via refresh), NOT a permanent spinner — that
  * combination is exactly what used to hang the page after registration.
  */
 export function resolveAccountState(input: {
   status: BuyerAuthStatus;
-  customersHydrated: boolean;
   hasBuyer: boolean;
   hasCustomer: boolean;
 }): AccountState {
   if (input.status === "error") return "error";
-  if (input.status === "loading" || !input.customersHydrated) return "loading";
+  if (input.status === "loading") return "loading";
   if (input.status === "unauthenticated" || !input.hasBuyer) return "unauthenticated";
   return input.hasCustomer ? "ready" : "error";
 }
@@ -65,4 +64,22 @@ export function customerNeedsUpdate(
   if (!existing) return true;
   const merged = mergeBuyerCustomer(existing, incoming);
   return JSON.stringify(merged) !== JSON.stringify(existing);
+}
+
+/**
+ * Combine the buyer's orders already held in the browser with the list the
+ * server just returned. The server's rows win (D1 is the authority); an order
+ * the browser already mirrors from checkout but the server list does not
+ * contain yet — the list was requested before the order was placed — stays in
+ * front. Each order appears once.
+ */
+export function mergeBuyerOrders(local: Order[], fromServer: Order[]): Order[] {
+  const serverIds = new Set(fromServer.map((order) => order.id));
+  const seen = new Set<string>();
+  const localOnly = local.filter((order) => {
+    if (serverIds.has(order.id) || seen.has(order.id)) return false;
+    seen.add(order.id);
+    return true;
+  });
+  return [...localOnly, ...fromServer];
 }

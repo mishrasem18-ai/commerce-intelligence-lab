@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useCustomers } from "@/lib/store/customers-store";
+import { useBuyerAccount } from "@/lib/store/buyer-account-store";
 import { analytics } from "@/lib/analytics";
 import type { BuyerAuthStatus } from "@/lib/auth/buyer-state";
 import type { Customer } from "@/lib/data";
@@ -18,11 +18,11 @@ import type { Customer } from "@/lib/data";
  *
  * This store is the SINGLE client-side source of truth for "who is signed in".
  * Every auth response (register / login / session) carries both the identity and
- * the buyer's full D1 customer profile, and this store pushes that profile into
- * the customers store. Account screens therefore never depend on the customer
- * snapshot the root layout happened to render with — that snapshot predates a
- * just-registered buyer and used to leave /account stuck on "Loading…" until a
- * manual browser refresh remounted the providers.
+ * the buyer's full D1 customer profile, and this store hands that profile to
+ * the buyer account store (lib/store/buyer-account-store.tsx) — the buyer's own
+ * record, and the only customer record the storefront holds. No customer data
+ * is server-rendered into the page, so account screens never depend on a
+ * snapshot that predates a just-registered buyer.
  */
 
 export const ADMIN_COOKIE = "cil_admin";
@@ -84,7 +84,7 @@ export function useAuth(): AuthContextValue {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { upsertCustomer } = useCustomers();
+  const { identify: identifyBuyerAccount, clear: clearBuyerAccount } = useBuyerAccount();
   const [admin, setAdmin] = React.useState<AdminSession | null>(null);
   const [buyer, setBuyer] = React.useState<BuyerSession | null>(null);
   const [buyerStatus, setBuyerStatus] = React.useState<BuyerAuthStatus>("loading");
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     (data: BuyerAuthPayload | null) => {
       if (data?.buyer) {
         setBuyer(data.buyer);
-        if (data.customer) upsertCustomer(data.customer);
+        identifyBuyerAccount(data.buyer.customerId, data.customer ?? null);
         setBuyerStatus("authenticated");
         // Analytics identity is ONLY the internal customer id — never the
         // buyer's email or name.
@@ -110,11 +110,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return true;
       }
       setBuyer(null);
+      clearBuyerAccount();
       setBuyerStatus("unauthenticated");
       analytics.setUserContext({ authentication_state: "guest" });
       return false;
     },
-    [upsertCustomer],
+    [identifyBuyerAccount, clearBuyerAccount],
   );
 
   /** Re-read the server-validated buyer session. Never throws. */
@@ -254,11 +255,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       /* ignore */
     }
     setBuyer(null);
+    // The next person on this browser must not find this buyer's profile or orders.
+    clearBuyerAccount();
     setBuyerStatus("unauthenticated");
     // Track while the identity context still holds the customer id, then reset.
     analytics.track("user.logout");
     analytics.setUserContext({ authentication_state: "guest" });
-  }, []);
+  }, [clearBuyerAccount]);
 
   const value = React.useMemo<AuthContextValue>(
     () => ({

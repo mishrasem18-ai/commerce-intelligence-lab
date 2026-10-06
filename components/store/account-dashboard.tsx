@@ -12,12 +12,12 @@ import { buttonVariants } from "@/components/ui/button";
 import { OrderStatusBadge } from "@/components/tables/order-status-badge";
 import { AccountStateNotice } from "@/components/store/account-state-notice";
 import { useBuyerCustomer } from "@/lib/hooks/use-buyer-customer";
-import { useOrders } from "@/lib/store/orders-store";
+import { useBuyerOrders } from "@/lib/hooks/use-buyer-orders";
 import { cn, formatCurrency } from "@/lib/utils";
 
 export function AccountDashboard() {
   const { customer, state, refresh } = useBuyerCustomer();
-  const { orders } = useOrders();
+  const { orders, status: ordersStatus, reload } = useBuyerOrders();
 
   if (state !== "ready" || !customer) {
     return (
@@ -96,7 +96,16 @@ export function AccountDashboard() {
           </Link>
         </CardHeader>
         <CardContent>
-          {myOrders.length === 0 ? (
+          {myOrders.length === 0 && ordersStatus !== "ready" ? (
+            // "No orders yet" is only true once the server has answered.
+            <AccountStateNotice
+              state={ordersStatus === "error" ? "error" : "loading"}
+              onRetry={() => {
+                void refresh();
+                reload();
+              }}
+            />
+          ) : myOrders.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-8 text-center">
               <span className="flex size-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
                 <Package className="size-6" />

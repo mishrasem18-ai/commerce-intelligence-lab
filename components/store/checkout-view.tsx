@@ -17,8 +17,7 @@ import {
 } from "@/components/store/address-fields";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/lib/store/auth-store";
-import { useCustomers } from "@/lib/store/customers-store";
-import { useOrders } from "@/lib/store/orders-store";
+import { useBuyerAccount } from "@/lib/store/buyer-account-store";
 import { useProducts } from "@/lib/store/products-store";
 import { useCart } from "@/lib/store/cart-store";
 import { useCartDetails } from "@/lib/hooks/use-cart-details";
@@ -42,13 +41,11 @@ export function CheckoutView() {
   const router = useRouter();
   const { toast } = useToast();
   const { buyer, buyerStatus, refreshBuyer } = useAuth();
-  const { getCustomer, updateCustomer } = useCustomers();
-  const { addOrder } = useOrders();
+  const { customer, updateCustomer, addOrder } = useBuyerAccount();
   const { getProduct, decrementInventory } = useProducts();
   const { clear } = useCart();
   const { lines, totals } = useCartDetails();
 
-  const customer = buyer ? getCustomer(buyer.customerId) : undefined;
   const savedAddresses = React.useMemo(() => customer?.addresses ?? [], [customer]);
 
   const [contactEmail, setContactEmail] = React.useState("");
@@ -157,7 +154,7 @@ export function CheckoutView() {
       isDefault: savedAddresses.length === 0,
     };
     if (saveNewAddress && customer) {
-      updateCustomer(customer.id, {
+      updateCustomer({
         addresses: [...savedAddresses, address],
       });
     }
@@ -242,8 +239,8 @@ export function CheckoutView() {
         analytics.track("commerce.purchase", { commerce: orderCommerce(data.order) });
       }
 
-      // Mirror the D1-created order into the client stores for immediate display
-      // (D1 remains authoritative; a refresh re-reads it).
+      // Mirror the D1-created order into the buyer's own store for immediate
+      // display (D1 remains authoritative; a refresh re-reads it).
       addOrder(data.order);
       decrementInventory(
         (data.order.lineItems ?? []).map((li) => ({ productId: li.productId, quantity: li.quantity })),
