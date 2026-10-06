@@ -18,8 +18,11 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## Two-sided demo platform
 
-This project runs as a two-sided commerce demo backed by one shared, browser-local
-data layer (products, orders, customers). No database or paid services are used.
+This project runs as a two-sided commerce demo. Products, orders and customers are
+stored in Cloudflare D1. The catalog is public. Customer and order records are sent
+only to the people they belong to: the full lists to a signed-in admin, and to a
+signed-in buyer only their own profile and orders. No page, RSC payload or API returns
+them to anyone else.
 
 ### Public buyer storefront (Aurora Market)
 
@@ -35,8 +38,11 @@ the customer's totals.
 
 ### Private admin (Commerce Intelligence)
 
-All admin routes live under `/admin/*` and are protected by middleware. Without an
-admin session you are redirected to `/admin/login`.
+All admin routes live under `/admin/*`. The middleware redirects a request without an
+admin cookie to `/admin/login`; the cookie's presence is not trusted beyond that. The
+admin layout, every admin page that reads customer or order records, and
+`GET /api/orders` / `GET /api/customers` validate the session against D1 on the server
+(`lib/auth/guards.ts`, `lib/db/admin-data.ts`).
 
 **Admin credentials are configured through environment secrets and are not stored
 in the repository.** For local development, copy `.env.example` to `.env.local` and
@@ -46,8 +52,9 @@ sign in locally without any setup). Rotate these before any production use.
 Buyer sessions and admin sessions are independent: a signed-in buyer cannot reach
 `/admin`, and an admin session does not create a buyer account.
 
-> Demo persistence uses `localStorage`. Data-access lives in `lib/store/*` so it can be
-> swapped for a real backend later. Card details are never stored — payment is simulated.
+> Orders and sign-ups are written to D1. The cart and locally created admin products
+> persist in `localStorage` (`lib/store/*`); a buyer's saved addresses and profile edits
+> last until the page is reloaded. Card details are never stored — payment is simulated.
 
 You can start editing the storefront home by modifying `app/(store)/page.tsx`.
 
