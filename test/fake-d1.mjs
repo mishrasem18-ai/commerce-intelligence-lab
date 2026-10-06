@@ -113,6 +113,13 @@ export function createFakeD1() {
       if (sql.includes("SELECT * FROM users ORDER BY")) {
         return { results: [...users.values()].map(customerRow), success: true };
       }
+      if (sql.includes("SELECT * FROM orders WHERE user_id = ?")) {
+        return { results: orders.filter((o) => o.user_id === this.args[0]), success: true };
+      }
+      if (sql.includes("FROM order_items i JOIN orders o ON o.id = i.order_id WHERE o.user_id = ?")) {
+        const own = new Set(orders.filter((o) => o.user_id === this.args[0]).map((o) => o.id));
+        return { results: orderItems.filter((i) => own.has(i.order_id)), success: true };
+      }
       if (sql.includes("SELECT * FROM orders ORDER BY")) {
         return { results: [...orders], success: true };
       }

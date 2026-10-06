@@ -186,18 +186,47 @@ function toLineItem(row: ItemRow): OrderLineItem {
   };
 }
 
-/** All orders (with their line items), most recent first. */
+function withLineItems(orderRows: OrderRow[], itemRows: ItemRow[]): Order[] {
+  const itemsByOrder = new Map<string, OrderLineItem[]>();
+  for (const r of itemRows) {
+    itemsByOrder.set(r.order_id, [...(itemsByOrder.get(r.order_id) ?? []), toLineItem(r)]);
+  }
+  return orderRows.map((row) => toOrder(row, itemsByOrder.get(row.id) ?? []));
+}
+
+/**
+ * All orders (with their line items), most recent first. Every customer's
+ * orders: read it through lib/db/admin-data.ts, which requires an admin session.
+ */
 export async function getOrders(): Promise<Order[]> {
   const db = await getDb();
   const [{ results: orderRows }, { results: itemRows }] = await Promise.all([
     db.prepare("SELECT * FROM orders ORDER BY placed_at DESC, id DESC").all<OrderRow>(),
     db.prepare("SELECT * FROM order_items").all<ItemRow>(),
   ]);
-  const itemsByOrder = new Map<string, OrderLineItem[]>();
-  for (const r of itemRows) {
-    itemsByOrder.set(r.order_id, [...(itemsByOrder.get(r.order_id) ?? []), toLineItem(r)]);
-  }
-  return orderRows.map((row) => toOrder(row, itemsByOrder.get(row.id) ?? []));
+  return withLineItems(orderRows, itemRows);
+}
+
+/**
+ * One buyer's orders (with their line items), most recent first. The filter is
+ * part of both queries, so no other buyer's row is ever read. Callers pass the
+ * user id of the D1-validated session, never a value from the request.
+ */
+export async function getOrdersByUserId(userId: string): Promise<Order[]> {
+  const db = await getDb();
+  const [{ results: orderRows }, { results: itemRows }] = await Promise.all([
+    db
+      .prepare("SELECT * FROM orders WHERE user_id = ? ORDER BY placed_at DESC, id DESC")
+      .bind(userId)
+      .all<OrderRow>(),
+    db
+      .prepare(
+        "SELECT i.* FROM order_items i JOIN orders o ON o.id = i.order_id WHERE o.user_id = ?",
+      )
+      .bind(userId)
+      .all<ItemRow>(),
+  ]);
+  return withLineItems(orderRows, itemRows);
 }
 
 /** A single order (with line items) by id, or null. */
