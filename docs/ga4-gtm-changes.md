@@ -62,9 +62,15 @@ one `dataLayer.push`. Commerce events are preceded by a separate `{ecommerce: nu
 
 **Page views.** `page_view` is pushed exactly once per logical navigation: initial load, link
 click, back/forward, and any pathname change. Changes that only refine the same page state
-are **not** page views, although they rewrite the URL with `router.replace`:
-- filter, sort and pagination changes;
-- typing in the shop search box.
+are **not** page views, although they rewrite the URL:
+- filter, sort and pagination changes (`router.replace`);
+- typing in the shop search box (native `history.replaceState`, no server request).
+
+**Sign-up and login.** The redirect to `/account` after a successful sign-up or login is an
+in-app navigation, so the `sign_up` / `login` push and the `/account` `page_view` land in the
+same document and GA4 has time to send both. Links to buyer-protected routes do not prefetch
+while signed out (`components/store/buyer-link.tsx`): a prefetched redirect to `/login` used to
+turn that navigation into a document load, which discarded the hit.
 
 Events are **not queued** while consent is missing. On a first visit, the initial
 `page_view` and anything else sent before **Accept All** are dropped. Accepting pushes
@@ -284,8 +290,8 @@ modification → Data streams → (web stream) → Enhanced measurement → ⚙�
   `page_view` whenever the URL changes without a reload.
   - This doubles the app's `page_view` on every link click and every back/forward.
   - It also adds page views the app deliberately does not send: every keystroke in the shop
-    search box, and every category, price, sort or page change, is a same-path
-    `router.replace`. With Site search on, each of those would also become a
+    search box, and every category, price, sort or page change, is a same-path URL
+    rewrite. With Site search on, each of those would also become a
     `view_search_results` for a partial term.
   - It reads the unscrubbed URL and a possibly stale `document.title`.
 - **Fix:** in **Page views → Show advanced settings**, **uncheck** "Page changes based on

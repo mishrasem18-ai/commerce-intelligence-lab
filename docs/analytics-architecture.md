@@ -181,7 +181,8 @@ One event per **deliberate** search, with the rules owned by
 - **Suggestion** — choosing a product in the header dropdown is its own
   signal (`search_source: "suggestion"`), never an additional plain submit.
 - **Shop box** — Enter / the mobile Search key only. The grid still filters
-  live while typing (URL `?q=` replace-refinements), but keystrokes are page
+  live while typing (the URL's `?q=` is rewritten with the native
+  `history.replaceState`, no server round trip), but keystrokes are page
   state. Enter rather than blur is the commit, because blur also fires when a
   half-typed term is abandoned by clicking elsewhere — the partial-term noise
   the old 500 ms debounce produced.
@@ -387,7 +388,7 @@ never appear.
 
 | Journey | Event | Where |
 | --- | --- | --- |
-| Any committed logical navigation (store, admin, 404) | `page.view` | `components/analytics/page-view-tracker.tsx`, mounted once in the **root** layout (`RootAnalytics`) — deterministic identity via `lib/analytics/navigation.ts`: identical URLs never re-track, and same-pathname `router.replace` query refinements (search keystrokes, filter/sort/pagination) count as page state, not navigations (router transition type supplied by `instrumentation-client.ts`). Title/page_type from the route table, never the DOM (see *Page titles*) |
+| Any committed logical navigation (store, admin, 404) | `page.view` | `components/analytics/page-view-tracker.tsx`, mounted once in the **root** layout (`RootAnalytics`) — deterministic identity via `lib/analytics/navigation.ts`: identical URLs never re-track, and same-pathname replace refinements (search keystrokes via `history.replaceState`, filter/sort/pagination via `router.replace`) count as page state, not navigations. The transition type is looked up by committed URL in a bounded list of recent transitions, recorded by `instrumentation-client.ts` for router navigations and by `lib/navigation/replace-url-state.ts` for native history rewrites — a list, not a single slot, so overlapping replace calls on a slow network cannot hide each other. Title/page_type from the route table, never the DOM (see *Page titles*) |
 | Shop grid | `commerce.view_item_list` | `shop-view.tsx` (debounced, signature-deduped) |
 | Search | `search.submit` | Exactly once per deliberate search via `searchTracker` (`lib/analytics/search.ts`): header Enter / "See all results" (`header`, fires before navigating), header suggestion chosen (`suggestion`), shop box Enter / mobile Search key (`shop`), document loaded with `/shop?q=` (`url`, once per document). Never while typing. Admin global search is internal tooling and deliberately untracked |
 | Card click | `commerce.select_item` | `buyer-product-card.tsx` |
