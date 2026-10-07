@@ -47,7 +47,7 @@ one `dataLayer.push`. Commerce events are preceded by a separate `{ecommerce: nu
 | Key | Example | Notes |
 | --- | --- | --- |
 | `event` | `page_view` | GA4 names for the mapped events: `page_view`, `search`, `view_item_list`, `select_item`, `view_item`, `add_to_cart`, `remove_from_cart`, `view_cart`, `begin_checkout`, `add_shipping_info`, `add_payment_info`, `purchase`, `sign_up`, `login`. Two unmapped events arrive under their canonical names: `consent.update` (after Accept All, or Save Preferences with analytics on) and `user.logout`. |
-| `event_id` | `9f1c…` | Unique per event. |
+| `event_id` | `9f1c…` | Unique per event. Sent to GA4 as the event parameter `app_event_id` (GA4 reserves `event_id`). See *Known limitation* in step 8 for the one case where a hit carries a neighbouring push's id. |
 | `page_title` | `Shop · Aurora Market` | **The governed pageName.** A fixed label per route template (`lib/routes/page-titles.ts`), in the form `… · Aurora Market` or `… · Aurora Market Admin`. It never contains PII, an id or a URL segment. The one data-driven title is the store PDP: `{product name} · Aurora Market`, or `Product Not Found · Aurora Market` when the product is missing, draft or archived. |
 | `page_type` | `product_list` | See the appendix. |
 | `page_path` | `/shop` | The pathname with PII segments scrubbed. A segment that is or contains an email, or is a whole phone number, becomes `[redacted]` (`/account/orders/jane%40x.com` → `/account/orders/[redacted]`). Product, order and customer ids are kept. |
@@ -117,20 +117,13 @@ Version 2*, *Set Default Value* unchecked.
 
 Usage notes:
 
-- `DLV - customer_id` can be sent to GA4 as `user_id` (see *User ID* in step 3b).
-- `DLV - event_id` is optional. Add it to `GA4 - Event settings` as `event_id` if you want to
-  trace a GA4 hit back to its push.
+- `DLV - customer_id` is sent to GA4 as `user_id` (see *User ID* in step 3b).
+- `DLV - event_id` is sent by `GA4 - Event settings` as **`app_event_id`** (GA4 reserves the
+  name `event_id`); every hit carries it, so a hit can be traced back to its push.
 - `ecommerce` needs no variable: GA4 ecommerce tags read it with *Send Ecommerce data →
   Data Layer*.
-
-Add one derived variable for internal traffic, used in step 5. It keys on the path, not the
-page type, so admin 404s are caught too (see step 5):
-
-- **Variables → New → RegEx Table**, name `RT - traffic_type`
-  - Input Variable: `{{DLV - page_path}}`
-  - Row: Pattern `^/admin(/|$)` → Output `internal`
-  - *Set Default Value*: unchecked. Leave it empty so storefront hits carry no
-    `traffic_type`.
+- `DLV - page_path` is defined but no tag reads it; the internal-traffic variable that would
+  have used it was not created (step 5).
 
 ---
 
@@ -167,7 +160,12 @@ Do **not** add any of these:
 | `page_referrer` | `{{DLV - page_referrer}}` |
 | `page_title` | `{{DLV - page_title}}` |
 | `page_type` | `{{DLV - page_type}}` |
-| `traffic_type` | `{{RT - traffic_type}}` |
+| `user_id` | `{{DLV - customer_id}}` |
+| `app_event_id` | `{{DLV - event_id}}` |
+
+The parameter is named `app_event_id`, not `event_id`: gtag reserves `event_id` and sends it
+as an internal hit field, never as an event parameter, so a custom dimension on `event_id`
+stays empty.
 
 Attach this variable to **every** GA4 event tag, including the existing ecommerce, `sign_up`
 and `login` tags. Overriding `page_location` and `page_referrer` on each event keeps a URL
@@ -177,12 +175,26 @@ typed with an email out of GA4 (for example `/account/orders/jane@x.com` or
 
 ### 3b. Google tag (configuration)
 
-Open the existing **Google Tag** (tag ID `G-…`). Leave its trigger as *Initialization - All
-Pages*. Under **Configuration settings → Configuration parameter**, add:
+Open the existing **Google Tag** (tag ID `G-…`). Remove **every firing trigger** from it. It
+runs only as the **setup tag** of each GA4 event tag (*Advanced Settings → Tag Sequencing →
+Fire a tag before*, with *Don't fire if the setup tag fails*), and its *Tag firing options*
+are **Once per page**. Under **Configuration settings → Configuration parameter**, add:
 
 | Parameter | Value |
 | --- | --- |
 | `send_page_view` | `false` |
+
+Why no trigger: with *Initialization - All Pages* the tag fired at `gtm.init`, while the
+consent `default` (everything denied) was still in force and before the site's `update` had
+been processed. Its consent check failed, that failed attempt consumed the *Once per page*
+slot, and every GA4 event tag then skipped because its setup tag had never succeeded: the
+site pushed correct events and GA4 received nothing. As a setup tag it first runs when the
+first consented event fires, after the `update`.
+
+**Consent requirement on every tag.** Give the Google tag and all 14 GA4 event tags the
+*Additional consent check* `analytics_storage` (*Consent Settings → Require additional
+consent for tag to fire*). The site pushes its events only while Analytics is granted (§0),
+and this check keeps a tag from firing while the Consent Mode state still says denied.
 
 **Consent.** Do not add a CMP template or a second consent default in GTM. The site already
 sends Consent Mode commands in this order:
@@ -190,7 +202,8 @@ sends Consent Mode commands in this order:
    `ad_personalization`, `analytics_storage` and `personalization_storage`, and grants
    `functionality_storage` and `security_storage`.
 2. On every page load, an `update` with the visitor's saved choice. It is queued right after
-   the `gtm.js` message, so tags on the Initialization trigger see the default first.
+   the `gtm.js` message, so the Google tag, fired as a setup tag by the first consented
+   event, sees the visitor's saved choice.
 3. Another `update` on every later decision, including a withdrawal.
 
 Category mapping: Analytics → `analytics_storage`; Advertising → `ad_storage`,
@@ -202,25 +215,19 @@ Consent Mode alone. That covers All Pages, clicks, timers, and Enhanced Measurem
 the GA4 tags on the `CE - …` triggers above, and switch off the Enhanced Measurement events
 listed in step 4.
 
-**User ID (optional).** Sending `customer_id` as GA4's `user_id` is safe:
+**User ID (implemented).** Sending `customer_id` as GA4's `user_id` is safe:
 - It is an opaque, pseudonymous id, not PII. It is `C-` followed by 12 random hexadecimal
   digits, generated at sign-up, and is not derived from the buyer's email, name or phone
   number. None of those reach the dataLayer.
 - It is cleared from the first push after sign-out (§0), so no event after a sign-out
   carries the previous buyer's id.
 
-To send it, open the `GA4 - Event settings` variable (step 3a) and add a row:
-
-| Parameter | Value |
-| --- | --- |
-| `user_id` | `{{DLV - customer_id}}` |
-
-Every GA4 event tag uses that variable, so each hit carries the id of the buyer who was
-signed in when it happened. Hits without a signed-in buyer carry none, because GTM leaves out
-a parameter whose variable is `undefined`. Do not put `user_id` under this Google tag's
-**Configuration settings** instead. Those are read once per page load, when the Google tag
-fires on Initialization. That is before the site knows the buyer session, and in-app sign-in
-and sign-out do not fire the tag again.
+It is sent by the `user_id` row of the `GA4 - Event settings` variable (step 3a). Every GA4
+event tag uses that variable, so each hit carries the id of the buyer who was signed in when
+it happened. Hits without a signed-in buyer carry none, because GTM leaves out a parameter
+whose variable is `undefined`. Do not put `user_id` under this Google tag's **Configuration
+settings** instead. Those are read once per page load, when the Google tag runs as the first
+event's setup tag, and in-app sign-in and sign-out do not run the tag again.
 
 ### 3c. GA4 event tag — page_view
 
@@ -229,7 +236,7 @@ and sign-out do not fire the tag again.
 - **Measurement ID:** same `G-…`
 - **Event Name:** `page_view`
 - **Event Settings Variable:** `{{GA4 - Event settings}}`, which provides `page_location`,
-  `page_referrer`, `page_title`, `page_type` and `traffic_type`.
+  `page_referrer`, `page_title`, `page_type`, `user_id` and `app_event_id`.
 - **Event Parameters:** none extra needed.
 - **Trigger:** `CE - page_view`
 
@@ -261,7 +268,7 @@ suggestion searches appear under the page the visitor was on, not `/shop`.
 
 - **Ecommerce tags and `sign_up` / `login` tags:** keep their triggers, and attach
   `{{GA4 - Event settings}}` so they also carry the scrubbed `page_location`,
-  `page_referrer` and `page_type`. The ecommerce events are `view_item_list`,
+  `page_referrer`, `page_type`, `user_id` and `app_event_id`. The ecommerce events are `view_item_list`,
   `select_item`, `view_item`, `add_to_cart`, `remove_from_cart`, `view_cart`,
   `begin_checkout`, `add_shipping_info`, `add_payment_info` and `purchase`.
 - **`consent.update` and `user.logout`:** these arrive under their canonical names and need
@@ -376,7 +383,7 @@ These don't need a custom dimension, because GA4 has built-ins:
 Optional extras:
 - Register `search_results_count` as a **custom metric** (unit: Standard) to average result
   counts.
-- Register `event_id` only if you need it in reports.
+- Register `app_event_id` only if you need it in reports.
 
 New definitions populate from the moment they are created; allow 24–48 h in standard
 reports.
@@ -477,6 +484,23 @@ product list settles.
 This inspector logs canonical events **even when consent blocks delivery** or GTM is not
 configured. Compare it with the dataLayer only while analytics is granted.
 `page_location` and `page_referrer` exist only in the dataLayer push.
+
+**Known limitation: `app_event_id` on the first hit of a hard-loaded page.** When a second
+push follows the document's first event within about 25–30 ms, the first hit carries the
+*second* push's `app_event_id`, so two hits share one id and the first push's id never
+reaches GA4. On this site that is a hard-loaded PDP (`page_view` then `view_item`) and
+usually a hard-loaded `/shop?q=` (`page_view` then the `url` search). The cause is GTM
+sequencing: for the document's first event the Google tag runs first as the setup tag, the
+event tag fires only when that completes, and its variables are resolved at that moment
+against a data layer that a later push has already moved on. In-app navigations and every
+later event of a document are unaffected. Only the id is wrong: the hit's `page_*` keys and
+`user_id` are the same on both pushes, and the `page_view` tag sends no ecommerce or search
+parameters. Counts, pages, users and revenue are correct. This is accepted and not fixed
+(it predates the current release). Options that were considered: fire the Google tag on
+*Initialization - All Pages* without a consent condition, which loads `gtag.js` before
+consent; delay the document's second push by about 100 ms, a timing heuristic; hold the
+second push until the Google tag reports its destination, which couples the adapter to GTM
+internals; or accept it.
 
 ---
 
