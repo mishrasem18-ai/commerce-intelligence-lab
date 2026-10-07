@@ -56,6 +56,16 @@ Buyer sessions and admin sessions are independent: a signed-in buyer cannot reac
 > persist in `localStorage` (`lib/store/*`); a buyer's saved addresses and profile edits
 > last until the page is reloaded. Card details are never stored — payment is simulated.
 
+### Analytics
+
+The storefront and admin emit vendor-neutral `analyticsData` events that a GTM adapter
+maps onto `window.dataLayer` for GA4, gated by the visitor's consent. The design is in
+[docs/analytics-architecture.md](docs/analytics-architecture.md); what the GTM container
+and the GA4 property must look like to consume it, and a DebugView test script, are in
+[docs/ga4-gtm-changes.md](docs/ga4-gtm-changes.md). The adapter is inert unless
+`NEXT_PUBLIC_GTM_CONTAINER_ID` is set at build time (see `.env.example`). The e2e suite
+blocks every Google host, so GA4 hits can only be checked against a deployed site.
+
 You can start editing the storefront home by modifying `app/(store)/page.tsx`.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
@@ -69,8 +79,11 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deploy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The site runs on a Cloudflare Worker built with OpenNext. Every push to `main` triggers
+`.github/workflows/deploy.yml`, which builds and runs `npm run deploy` (`opennextjs-cloudflare
+build`, a bundle check, then `wrangler deploy`). Pushing any other branch does not deploy.
+The build-time `NEXT_PUBLIC_GTM_CONTAINER_ID` comes from a GitHub Actions repository
+variable; the Cloudflare token and account id are repository secrets. `npm run preview`
+builds and serves the same Worker locally.
