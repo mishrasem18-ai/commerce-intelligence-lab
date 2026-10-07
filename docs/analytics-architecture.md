@@ -262,7 +262,8 @@ timers). Every other event's default page context uses the same resolver.
 
 `page_type` values: `home`, `product_list`, `product_detail`, `cart`,
 `checkout`, `order_confirmation`, `auth_login`, `auth_signup`, `account`
-(all account sub-pages), `not_found`, and for the admin: `admin_login`,
+(all account sub-pages), `content` (`/credits`), `not_found`, and for the
+admin: `admin_login`,
 `admin_dashboard`, `admin_product_list`, `admin_product_detail`,
 `admin_order_list`, `admin_order_detail`, `admin_customer_list`,
 `admin_customer_detail`, `admin_analytics`, `admin_reports`,
@@ -322,9 +323,10 @@ interface AnalyticsAdapter {
 
 **GTM / GA4 — implemented in Phase 2A** (`adapters/gtm-adapter.ts`), but
 **dormant by default**: activation requires `NEXT_PUBLIC_GTM_CONTAINER_ID`
-(a `GTM-XXXXXXX` container ID), which is deliberately unset in this repo. With
-no ID the adapter is exactly the Phase 1 placeholder — "Not configured", no
-script, no dataLayer writes, no network traffic.
+(a `GTM-XXXXXXX` container ID), which is not committed; production supplies
+it as a GitHub Actions variable (see *Current boundaries*). With no ID the
+adapter is exactly the Phase 1 placeholder — "Not configured", no script, no
+dataLayer writes, no network traffic.
 
 When a container ID is supplied:
 
@@ -364,8 +366,11 @@ Every pushed event also carries the page keys `page_title`, `page_type`,
 `page_path`, `page_location` — rebuilt from the scrubbed canonical path +
 query string (never `document.location`) — and `page_referrer`: the
 previous page view's scrubbed `page_location` in the SPA, or the scrubbed
-`document.referrer` for a document's first page view. The GTM/GA4
-configuration that consumes these keys is in `docs/ga4-gtm-changes.md`.
+`document.referrer` for a document's first page view. The envelope's
+`event_id` is pushed as `event_id` and reaches GA4 as the event parameter
+`app_event_id` (gtag reserves the name `event_id`); `customer_id` reaches it
+as `user_id`. The GTM/GA4 configuration that consumes these keys is in
+`docs/ga4-gtm-changes.md`.
 
 GA4 naming lives only in `GA4_EVENT_NAME_MAP` — never in components — and
 `window.dataLayer` remains a per-vendor output queue, never the model.
@@ -427,8 +432,10 @@ Actions **repository variable** consumed by `.github/workflows/deploy.yml`
 (both the build and deploy steps, since each runs `next build`). Admin
 (`/admin/*`) page views are tracked like storefront ones (distinct `admin_*`
 page types and the `· Aurora Market Admin` title suffix) and gated by the same
-persisted consent; exclude them from GA4 reporting as internal traffic (see
-`docs/ga4-gtm-changes.md`). The consent banner and the training debugger stay
+persisted consent; they are **not** filtered out in GA4 (an internal-traffic
+filter was skipped by decision on 2026-10-05, see `docs/ga4-gtm-changes.md`),
+so a report that should exclude them filters on `page_type` not starting
+with `admin_`. The consent banner and the training debugger stay
 storefront-only. Contentsquare and AMTA Lab remain unconfigured
 placeholders. AMTA Lab is the author's own educational platform simulating
 Adobe-style capabilities — no actual Adobe Analytics, Launch, AEP, Web SDK,
