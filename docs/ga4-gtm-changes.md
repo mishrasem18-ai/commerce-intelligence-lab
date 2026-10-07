@@ -334,33 +334,28 @@ engagement, File downloads)
 
 ---
 
-## 5. Internal-traffic exclusion for /admin
+## 5. Internal traffic from /admin
+
+*Skipped by decision (2026-10-05): admin hits are collected unfiltered.* There is no
+`traffic_type` parameter and no internal-traffic data filter in GA4.
 
 Admin pages are tracked, and `page_path` always starts with `/admin`:
 - **Known admin routes** have `page_type` `admin_*` and titles `… · Aurora Market Admin`.
 - **Unknown URLs under `/admin`** (for example `/admin/foo`) render the global 404, with
   `page_type: not_found` and `page_title: Page Not Found · Aurora Market`.
 
-That is why `RT - traffic_type` (steps 1 and 3a) keys on `page_path` `^/admin(/|$)`, not on
-the page type, and tags every such hit `traffic_type = internal`.
-
 Admin pages send `page_view` only; the admin global search is deliberately untracked. They
 send it only in a browser that has granted analytics consent on the storefront: there is no
-consent banner or Cookie Settings link under `/admin`.
+consent banner or Cookie Settings link under `/admin`. Admin hits never carry `user_id`.
 
-In GA4:
+To keep admin traffic out of a report, filter on **Page type** not starting with `admin_`
+(an admin 404 is `not_found`, so filter on **Page path** `/admin` to catch those too).
 
-1. Go to **Admin → Data collection and modification → Data filters → Create filter →
-   Internal traffic**. Name it `Internal (admin)`, set the operation to **Exclude**, and the
-   parameter value to **`internal`**. GA4's IP-based "Define internal traffic" rules are
-   optional: the filter matches the `traffic_type` parameter however it was set.
-2. Leave the filter in **Testing** first. In reports, add the dimension **Test data filter
-   name**, and confirm that only hits whose **Page path** starts with `/admin` match. That
-   means every `admin_*` page type, plus admin 404s.
-3. Switch it to **Active**. Excluded data is not recoverable.
-
-Alternatively, add a trigger exception `DLV - page_path matches RegEx ^/admin(/|$)` to the
-GA4 tags. That drops admin hits at the source, but you lose the ability to test the filter.
+If the exclusion is wanted later, the path is: a RegEx Table variable on `{{DLV - page_path}}`
+(`^/admin(/|$)` → `internal`, no default) sent as `traffic_type` from `GA4 - Event
+settings`, then an **Internal traffic** data filter in GA4 (**Admin → Data collection and
+modification → Data filters**) with parameter value `internal`, tested with the **Test data
+filter name** dimension before it is made Active. Excluded data is not recoverable.
 
 ---
 
@@ -406,7 +401,7 @@ reports.
   - `Commerce Intelligence Lab` titles
   - customer names, order ids or customer ids
   - empty titles
-  - once the internal filter is Active, `… · Aurora Market Admin` rows
+- `… · Aurora Market Admin` rows are expected: admin traffic is not filtered (step 5).
 
 **2. Search terms**
 - **Where:** *Explore → Free form*. Rows **Search term**, columns **Search source**, values
@@ -467,8 +462,8 @@ product list settles.
 | 15 | Clear the header box, search `jane.doe@example.com`, and press Enter. Then click any product. | `search` `{search_term: "[redacted]"}`, `page_view` `{page_location: "…/shop?q=[redacted]"}`. The product's `page_view` carries `page_referrer: "…/shop?q=[redacted]"`. | no email anywhere in DebugView |
 | 16 | Signed in as a buyer, visit `/account/orders/jane%40example.com`, then click **My Orders** in the account navigation. | `page_view` `{page_title: "Order Detail · Aurora Market", page_path: "/account/orders/[redacted]"}`, then `page_view` `{page_path: "/account/orders", page_referrer: "…/account/orders/[redacted]"}` | page_location and page_referrer redacted |
 | 17 | Visit `/definitely-missing`. | `page_view` `{page_title: "Page Not Found · Aurora Market", page_type: "not_found"}` | — |
-| 18 | Open `/admin/login`, sign in, then open **Products**, a product, **Customers**, and a customer. | One `page_view` per page: `Sign In · Aurora Market Admin` / `admin_login`, `Dashboard · Aurora Market Admin` / `admin_dashboard`, `Products · Aurora Market Admin` / `admin_product_list`, `Product Detail · Aurora Market Admin` / `admin_product_detail`, `Customers · Aurora Market Admin` / `admin_customer_list`, `Customer Detail · Aurora Market Admin` / `admin_customer_detail`. Never a customer name. | each hit carries `traffic_type = internal`; filtered out once the data filter is Active |
-| 19 | Visit `/admin/does-not-exist` while signed in. | `page_view` `{page_title: "Page Not Found · Aurora Market", page_type: "not_found", page_path: "/admin/does-not-exist"}` | carries `traffic_type = internal` (path-based) |
+| 18 | Open `/admin/login`, sign in, then open **Products**, a product, **Customers**, and a customer. | One `page_view` per page: `Sign In · Aurora Market Admin` / `admin_login`, `Dashboard · Aurora Market Admin` / `admin_dashboard`, `Products · Aurora Market Admin` / `admin_product_list`, `Product Detail · Aurora Market Admin` / `admin_product_detail`, `Customers · Aurora Market Admin` / `admin_customer_list`, `Customer Detail · Aurora Market Admin` / `admin_customer_detail`. Never a customer name. | 1 × `page_view` each, no `user_id`, no `traffic_type`; admin hits are not filtered |
+| 19 | Visit `/admin/does-not-exist` while signed in. | `page_view` `{page_title: "Page Not Found · Aurora Market", page_type: "not_found", page_path: "/admin/does-not-exist"}` | 1 × `page_view`; not filtered |
 | 20 | Use the admin top-bar search: type `lamp`, then press Enter (or click a result). | Typing: nothing. Enter or click: only the destination's `page_view` (for example `Product Detail · Aurora Market Admin`). **Never** `search`. | no `search`; admin search is deliberately untracked |
 | 21 | On a phone, or in device emulation: open the menu, type `lamp` in its search box, and press the keyboard's Search key. On `/shop`, do the same in the shop box. | Menu: exactly one `search` `{search_source: "header"}`, then `page_view` `/shop?q=lamp`. Shop box: one `search` `{search_source: "shop"}`, and the keyboard closes. | 1 × `search` each |
 | 22 | Back on the storefront, open **Cookie Settings** in the footer, switch Analytics off, click **Save Preferences**, then navigate. | No event pushes. A Consent update with `analytics_storage: denied` is pushed. | no hits |
