@@ -7,7 +7,10 @@ pushes, and nothing more. Everything below describes the shipped code:
 - `lib/routes/page-titles.ts` defines titles and page types.
 - `lib/analytics/search.ts` defines the search rules.
 
-The behaviour is pinned by `e2e/page-titles.spec.ts` and `e2e/search.spec.ts`.
+The behaviour is pinned by the Playwright specs under `e2e/`: `page-titles.spec.ts` and
+`search.spec.ts` for titles and searches, `datalayer.spec.ts` for the push contract,
+`ecommerce.spec.ts` for the commerce funnel, `identity-on-load.spec.ts` for `customer_id` on a
+hard load, and `auth-navigation.spec.ts` for the sign-up and login redirects.
 
 Work in a **new GTM workspace**. Test GA4 changes in DebugView, or in a staging property,
 until step 8 passes.
@@ -54,7 +57,7 @@ one `dataLayer.push`. Commerce events are preceded by a separate `{ecommerce: nu
 | `page_location` | `https://…/shop?q=desk` | Origin + scrubbed path + scrubbed query string. **Use this instead of the tag's automatic URL.** |
 | `page_referrer` | `https://…/product/prod-1001` | The `page_location` of the previous `page_view` pushed in this page load. Until one has been pushed, it is the scrubbed browser referrer; that includes the first view after consent is accepted mid-visit. **Cleared** when neither exists. Every event carries the referrer of the page it happened on. **Use this instead of the tag's automatic referrer.** |
 | `customer_id` | `C-AB12CD` | The buyer's pseudonymous id, on every push while a buyer is signed in: from the sign-up or login onwards, and from the first `page_view` of a hard-loaded page (the server validates the session cookie and gives the page the buyer's own id). Never set for admin sessions. Cleared from the first push after sign-out; the `user.logout` push itself still carries it. |
-| `ecommerce` | `{ items: [...] }` | Commerce events only. `value` is the sum of price × quantity of `items`, without shipping or tax (a list view has no `value`). `purchase` adds `transaction_id`, `tax` and `shipping`. Every item has `item_brand` and `item_category`. |
+| `ecommerce` | `{ items: [...] }` | Commerce events only, always with `currency`. `value` is the sum of price × quantity of `items`, without shipping or tax (a list view has no `value`). `purchase` adds `transaction_id` (the order number), `tax`, `shipping` and `payment_type`. Every item has `item_brand` and `item_category`. Before the deploy of 2026-10-07, `value` on cart and purchase events was the order total including shipping and tax, and purchase items had no brand or category, so GA4 revenue steps down from that date. |
 | `search_term` | `desk` | `search` only. Normalised: Unicode NFKC, whitespace collapsed, trimmed, lower-case, cut to 100 characters. If the term contains an email (even a partial `jane@`) or a phone-shaped number, even percent-encoded, the whole term becomes `[redacted]`. Empty terms are never pushed. |
 | `search_results_count` | `7` | `search` only. A non-negative integer: the number of products `/shop` lists for the term. `header` and `suggestion` count store-wide, not the suggestions shown. `shop` counts across all result pages with the active category and price filters. `url` counts the loaded URL, including locally created products. |
 | `search_source` | `header` | `search` only: `header`, `shop`, `suggestion` or `url`. |
@@ -383,6 +386,9 @@ Optional extras:
 New definitions populate from the moment they are created; allow 24–48 h in standard
 reports.
 
+**Event data retention** (**Admin → Data collection and modification → Data retention**) is
+set to **14 months**, so explorations can look back that far.
+
 ---
 
 ## 7. Reports and explorations to validate
@@ -467,6 +473,7 @@ product list settles.
 | 20 | Use the admin top-bar search: type `lamp`, then press Enter (or click a result). | Typing: nothing. Enter or click: only the destination's `page_view` (for example `Product Detail · Aurora Market Admin`). **Never** `search`. | no `search`; admin search is deliberately untracked |
 | 21 | On a phone, or in device emulation: open the menu, type `lamp` in its search box, and press the keyboard's Search key. On `/shop`, do the same in the shop box. | Menu: exactly one `search` `{search_source: "header"}`, then `page_view` `/shop?q=lamp`. Shop box: one `search` `{search_source: "shop"}`, and the keyboard closes. | 1 × `search` each |
 | 22 | Back on the storefront, open **Cookie Settings** in the footer, switch Analytics off, click **Save Preferences**, then navigate. | No event pushes. A Consent update with `analytics_storage: denied` is pushed. | no hits |
+| 23 | With Analytics back on, sign out, then sign in again on `/login`; later, create a buyer on `/signup`. | `login` (or `sign_up`) `{customer_id: "C-…"}`, then `page_view` `{page_path: "/account"}` with the same `customer_id`, in the same document (Tag Assistant does not restart). | 1 × `login` / `sign_up` and 1 × `page_view`, both with `user_id`; the hit after `user.logout` has none |
 
 **Canonical-side cross-check** at any point, in the DevTools console:
 - `window.analyticsData.page` shows the canonical context of the last page view: `path`,
@@ -496,6 +503,12 @@ parameters. Counts, pages, users and revenue are correct. This is accepted and n
 consent; delay the document's second push by about 100 ms, a timing heuristic; hold the
 second push until the Google tag reports its destination, which couples the adapter to GTM
 internals; or accept it.
+
+**Testing notes.** The e2e suite blocks every Google host globally (`e2e/fixtures.ts`; a lint
+rule forbids importing `test` from `@playwright/test` directly), so GA4 hits are observable
+only against the live site. When validating live with a browser-side recorder, stay at least
+6 s on each page before leaving it: GA4 batches hits for a few seconds, and a hit sent while
+the page unloads is not visible to the recorder, so faster runs undercount.
 
 ---
 
